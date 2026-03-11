@@ -1,0 +1,1 @@
+import { PrismaClient } from '@prisma/client'; const prisma = new PrismaClient(); async function main() { try { const link = await prisma.signupLink.findFirst(); console.log('Success:', link); } catch (e) { console.error('Error:', e); } } main();

@@ -1,0 +1,152 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  ADMIN
+  PROMOTER
+  ENTRY_STAFF
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum LinkType {
+  GENERAL
+  PROMOTER
+  PERSONAL
+}
+
+enum FieldMode {
+  HIDDEN
+  OPTIONAL
+  REQUIRED
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  passwordHash  String
+  role          Role      @default(PROMOTER)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  eventsCreated      Event[]      @relation("CreatedEvents")
+  assignedEvents     Event[]      @relation("EventPromoters")
+  assignedSignupLinks SignupLink[] @relation("AssignedPromoters")
+  guests             Guest[]      @relation("PromoterGuests")
+  checkIns           CheckIn[]
+  doorEvents         Event[]      @relation("DoorStaffEvents")
+}
+
+model Event {
+  id            String      @id @default(cuid())
+  name          String
+  slug          String      @unique
+  date          DateTime
+  startTime     String?     // e.g. "22:00"
+  endTime       String?     // e.g. "04:00"
+  venueName     String?
+  address       String?
+  description   String?
+  status        EventStatus @default(DRAFT)
+  capacity      Int?        // Overall max guests
+
+  // Branding
+  logoUrl       String?
+  heroImageUrl  String?
+  accentColor   String?     // e.g. "#FF0000"
+
+  createdByUserId String
+  createdBy       User      @relation("CreatedEvents", fields: [createdByUserId], references: [id])
+
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  signupLinks        SignupLink[]
+  guests             Guest[]
+  doorStaff          User[]      @relation("DoorStaffEvents")
+  assignedPromoters  User[]      @relation("EventPromoters")
+}
+
+model SignupLink {
+  id                   String    @id @default(cuid())
+  eventId              String
+  event                Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+  // Many-to-many: Links can be assigned to multiple promoters
+  assignedPromoters    User[]    @relation("AssignedPromoters")
+
+  type                 LinkType  @default(GENERAL)
+  slug                 String    @unique
+  title                String?   // Internal label
+  
+  maxTotalGuests       Int?
+  maxPlusOnesPerSignup Int       @default(3)
+  singleUse            Boolean   @default(false)
+  active               Boolean   @default(true)
+
+  // Field Config
+  emailMode            FieldMode @default(REQUIRED)
+  phoneMode            FieldMode @default(OPTIONAL)
+  allowNotes           Boolean   @default(false)
+
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  // Relations
+  guests               Guest[]
+}
+
+model Guest {
+  id             String      @id @default(cuid())
+  eventId        String
+  event          Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+  signupLinkId   String?
+  signupLink     SignupLink? @relation(fields: [signupLinkId], references: [id], onDelete: SetNull)
+
+  promoterId     String?
+  promoter       User?       @relation("PromoterGuests", fields: [promoterId], references: [id])
+
+  firstName      String
+  lastName       String
+  email          String?
+  phone          String?
+  plusOnesCount  Int         @default(0)
+  note           String?
+  
+  // Future extension: qrToken String? @unique
+
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  // Relations
+  checkIn        CheckIn?
+}
+
+model CheckIn {
+  id                String   @id @default(cuid())
+  guestId           String   @unique
+  guest             Guest    @relation(fields: [guestId], references: [id], onDelete: Cascade)
+
+  checkedInByUserId String
+  checkedInBy       User     @relation(fields: [checkedInByUserId], references: [id])
+
+  checkedInAt       DateTime @default(now())
+  checkedInCount    Int      @default(1)
+  checkedOutAt      DateTime?
+  checkedOutCount   Int?
+}
