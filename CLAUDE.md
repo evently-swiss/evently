@@ -25,7 +25,10 @@ Local PostgreSQL is available via Docker:
 docker-compose up -d
 ```
 
-Environment variables follow `.env.example`: `DATABASE_URL` (direct), `DATABASE_URL_UNPOOLED` (for migrations), `NEXTAUTH_SECRET`, `NEXTAUTH_URL`.
+Environment variables are documented in `.env.example`. Required keys:
+`DATABASE_URL`, `DIRECT_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `APP_URL`,
+`RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT`,
+`EMAIL_SMTP_USER`, `EMAIL_SMTP_PASS`, `EMAIL_SMTP_FROM`.
 
 ## Architecture
 

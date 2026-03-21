@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { Guest, CheckIn } from '@prisma/client';
 import { checkInGuest, checkOutGuest } from './actions';
 import { Search, X, Minus, Plus } from 'lucide-react';
+import QrScanner from './qr-scanner';
 
 type GuestWithCheckIn = Guest & { checkIn: CheckIn | null };
 
@@ -15,6 +16,7 @@ type BottomSheetState = {
 
 export default function GuestList({ guests, eventId }: { guests: GuestWithCheckIn[], eventId: string }) {
     const [query, setQuery] = useState('');
+    const [viewMode, setViewMode] = useState<'list' | 'scan'>('list');
     const [optimisticGuests, setOptimisticGuests] = useState(guests);
     const [selectedGuest, setSelectedGuest] = useState<GuestWithCheckIn | null>(null);
     const [sheet, setSheet] = useState<BottomSheetState>(null);
@@ -108,6 +110,31 @@ export default function GuestList({ guests, eventId }: { guests: GuestWithCheckI
 
     return (
         <div>
+            <div className="mb-4 rounded-xl border border-gray-800 bg-gray-900 p-1 grid grid-cols-2 gap-1">
+                <button
+                    type="button"
+                    onClick={() => setViewMode('list')}
+                    className={`rounded-lg px-3 py-2 text-sm font-medium ${
+                        viewMode === 'list' ? 'bg-indigo-600 text-white' : 'text-gray-300'
+                    }`}
+                >
+                    Guest List
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setViewMode('scan')}
+                    className={`rounded-lg px-3 py-2 text-sm font-medium ${
+                        viewMode === 'scan' ? 'bg-indigo-600 text-white' : 'text-gray-300'
+                    }`}
+                >
+                    QR Scan
+                </button>
+            </div>
+
+            {viewMode === 'scan' ? (
+                <QrScanner eventId={eventId} />
+            ) : (
+                <>
             {/* Search */}
             <div className="sticky top-0 bg-black pt-4 pb-3 z-10">
                 <div className="relative">
@@ -198,6 +225,8 @@ export default function GuestList({ guests, eventId }: { guests: GuestWithCheckI
                     <li className="text-center text-gray-500 py-10">No guests found.</li>
                 )}
             </ul>
+                </>
+            )}
 
             {/* Bottom Sheet (only shown when plusOnes > 0) */}
             {sheet && (() => {

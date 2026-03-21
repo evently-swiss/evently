@@ -1,7 +1,7 @@
 'use server';
 
 import { signIn } from '@/lib/auth';
-import { AuthError } from 'next-auth';
+import { AuthError, CredentialsSignin } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 
@@ -42,13 +42,15 @@ export async function authenticate(
             redirectTo: redirectPath,
         });
     } catch (error) {
+        if (error instanceof CredentialsSignin && error.code === 'email_not_verified') {
+            return 'Your email is not verified. Please check your inbox for the verification link.';
+        }
+
         if (error instanceof AuthError) {
-            switch (error.type) {
-                case 'CredentialsSignin':
-                    return 'Invalid credentials';
-                default:
-                    return 'Something went wrong.';
+            if (error.type === 'CredentialsSignin') {
+                return 'Invalid credentials';
             }
+            return 'Something went wrong.';
         }
         throw error;
     }

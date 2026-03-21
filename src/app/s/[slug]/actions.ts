@@ -86,7 +86,7 @@ export async function signupGuest(slug: string, prevState: any, formData: FormDa
 
     // 5. Create Guest
     try {
-        await prisma.guest.create({
+        const guest = await prisma.guest.create({
             data: {
                 eventId: link.eventId,
                 signupLinkId: link.id,
@@ -96,12 +96,21 @@ export async function signupGuest(slug: string, prevState: any, formData: FormDa
                 phone: cleanPhone,
                 plusOnesCount: plusOnes,
                 note: data.note || null,
+                qrToken: crypto.randomUUID(),
+                rsvpStatus: 'CONFIRMED',
+            },
+            select: {
+                qrToken: true,
             },
         });
+
+        if (!guest.qrToken) {
+            return { message: 'Failed to generate QR token. Please try again.' };
+        }
+
+        redirect(`/s/${slug}/confirmation?token=${encodeURIComponent(guest.qrToken)}`);
     } catch (error) {
         console.error(error);
         return { message: 'Failed to sign up. Please try again.' };
     }
-
-    redirect(`/s/${slug}/confirmation`);
 }

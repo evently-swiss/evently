@@ -32,10 +32,19 @@ enum FieldMode {
   REQUIRED
 }
 
+enum RsvpStatus {
+  PENDING
+  CONFIRMED
+  DECLINED
+  WAITLISTED
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
   email         String    @unique
+  emailVerified DateTime?
+  verificationToken String? @unique
   passwordHash  String
   role          Role      @default(PROMOTER)
   createdAt     DateTime  @default(now())
@@ -77,6 +86,7 @@ model Event {
   // Relations
   signupLinks        SignupLink[]
   guests             Guest[]
+  lounges            Lounge[]
   doorStaff          User[]      @relation("DoorStaffEvents")
   assignedPromoters  User[]      @relation("EventPromoters")
 }
@@ -127,14 +137,31 @@ model Guest {
   phone          String?
   plusOnesCount  Int         @default(0)
   note           String?
-  
-  // Future extension: qrToken String? @unique
+  rsvpStatus     RsvpStatus  @default(PENDING)
+  inviteToken    String?     @unique
+  invitedAt      DateTime?
+  qrToken        String?     @unique
 
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
   // Relations
   checkIn        CheckIn?
+  lounges        Lounge[]
+}
+
+model Lounge {
+  id              String   @id @default(cuid())
+  eventId         String
+  event           Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  tableNumbers    String[]
+  arrivalTime     String?
+  minConsumation  Float?
+  numberOfGuests  Int
+
+  guestId         String?
+  guest           Guest?   @relation(fields: [guestId], references: [id], onDelete: SetNull)
 }
 
 model CheckIn {

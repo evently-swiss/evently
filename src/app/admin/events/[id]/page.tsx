@@ -11,9 +11,11 @@ import { UnarchiveEventButton } from './UnarchiveEventButton';
 import { CopyLinkButton } from '@/components/CopyLinkButton';
 import { EditGuestModal } from '@/components/modals/EditGuestModal';
 import { ImportGuestsModal } from '@/components/modals/ImportGuestsModal';
-import { updateGuest, deleteGuest, addGuest } from '@/app/promoter/events/[id]/actions';
+import { updateGuest, deleteGuest, addGuest, inviteGuest } from '@/app/promoter/events/[id]/actions';
 import { GuestNote } from '@/components/GuestNote';
 import { AddGuestModal } from '@/components/modals/AddGuestModal';
+import { InviteGuestModal } from '@/components/modals/InviteGuestModal';
+import { RsvpStatusBadge } from '@/components/RsvpStatusBadge';
 
 async function getEvent(id: string) {
     const event = await prisma.event.findUnique({
@@ -82,6 +84,12 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     const checkedIn = event.guests.filter(g => g.checkIn && !g.checkIn.checkedOutAt).length +
         event.guests.filter(g => g.checkIn && !g.checkIn.checkedOutAt).reduce((sum, g) => sum + g.plusOnesCount, 0);
     const checkInRate = totalGuests > 0 ? Math.round((checkedIn / totalGuests) * 100) : 0;
+    const rsvpCounts = {
+        CONFIRMED: event.guests.filter((guest) => guest.rsvpStatus === 'CONFIRMED').length,
+        PENDING: event.guests.filter((guest) => guest.rsvpStatus === 'PENDING').length,
+        DECLINED: event.guests.filter((guest) => guest.rsvpStatus === 'DECLINED').length,
+        WAITLISTED: event.guests.filter((guest) => guest.rsvpStatus === 'WAITLISTED').length,
+    };
 
     return (
         <div>
@@ -134,6 +142,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                     </a>
                     <ImportGuestsModal eventId={event.id} />
                     <AddGuestModal eventId={event.id} addGuestAction={addGuest} />
+                    <InviteGuestModal eventId={event.id} inviteGuestAction={inviteGuest} />
                     {event.status !== 'ARCHIVED' ? (
                         <ArchiveEventButton archiveAction={archiveEvent.bind(null, event.id)} />
                     ) : (
@@ -194,6 +203,20 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
             <div className="mt-8">
                 <h3 className="text-lg font-medium leading-6 text-white mb-4">All Guests</h3>
+                <div className="mb-3 flex flex-wrap gap-2">
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-emerald-950/70 text-emerald-300 border border-emerald-800/70">
+                        Confirmed: {rsvpCounts.CONFIRMED}
+                    </span>
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-amber-950/70 text-amber-300 border border-amber-800/70">
+                        Pending: {rsvpCounts.PENDING}
+                    </span>
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-rose-950/70 text-rose-300 border border-rose-800/70">
+                        Declined: {rsvpCounts.DECLINED}
+                    </span>
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-sky-950/70 text-sky-300 border border-sky-800/70">
+                        Waitlisted: {rsvpCounts.WAITLISTED}
+                    </span>
+                </div>
                 <div className="bg-gray-900 shadow overflow-hidden sm:rounded-md border border-gray-800">
                     <ul role="list" className="divide-y divide-gray-800">
                         {event.guests.length === 0 ? (
@@ -215,6 +238,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                                             </div>
                                         </div>
                                         <div className="flex items-center justify-between sm:justify-end gap-3">
+                                            <RsvpStatusBadge status={guest.rsvpStatus} />
                                             {guest.checkIn ? (
                                                 !guest.checkIn.checkedOutAt ? (
                                                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-900 text-green-300">

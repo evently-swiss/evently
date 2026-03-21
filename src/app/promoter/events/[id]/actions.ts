@@ -6,6 +6,7 @@ import { auth } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 import { ActionState } from '@/lib/definitions';
+import { sendInviteEmail } from '@/lib/invite-email';
 
 
 
@@ -180,6 +181,91 @@ const guestSchema = z.object({
     plusOnes: z.coerce.number().min(0),
     note: z.string().optional(),
 });
+
+const inviteGuestSchema = z.object({
+    firstName: z.string().min(1),
+    lastName: z.string().min(1),
+    email: z.string().email(),
+});
+
+function getBaseUrl() {
+    return (process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'http://localhost:3000').replace(/\/$/, '');
+}
+
+export async function inviteGuest(eventId: string, prevState: ActionState, formData: FormData): Promise<ActionState> {
+    const session = await auth();
+    if (!session || (session.user.role !== 'PROMOTER' && session.user.role !== 'ADMIN')) {
+        return { message: 'Unauthorized' };
+    }
+
+    const validatedFields = inviteGuestSchema.safeParse({
+        firstName: formData.get('firstName'),
+        lastName: formData.get('lastName'),
+        email: formData.get('email'),
+    });
+
+    if (!validatedFields.success) {
+        return { errors: validatedFields.error.flatten().fieldErrors };
+    }
+
+    const { firstName, lastName, email } = validatedFields.data;
+
+    const event = await prisma.event.findUnique({
+        where: { id: eventId },
+        select: { id: true, name: true, date: true, venueName: true },
+    });
+
+    if (!event) {
+        return { message: 'Event not found.' };
+    }
+
+    const duplicate = await findDuplicateGuest(eventId, { firstName, lastName, email });
+    if (duplicate) {
+        return { message: `Guest ${duplicate.firstName} ${duplicate.lastName} already exists on this list.` };
+    }
+
+    const token = crypto.randomUUID();
+
+    try {
+        await prisma.guest.create({
+            data: {
+                eventId,
+                promoterId: session.user.id,
+                firstName,
+                lastName,
+                email,
+                inviteToken: token,
+                invitedAt: new Date(),
+                rsvpStatus: 'PENDING',
+            },
+        });
+
+        const inviteUrl = `${getBaseUrl()}/invite/${token}`;
+        const emailResult = await sendInviteEmail({
+            to: email,
+            guestName: `${firstName} ${lastName}`,
+            eventName: event.name,
+            eventDate: event.date,
+            venueName: event.venueName,
+            inviteUrl,
+        });
+
+        revalidatePath(`/promoter/events/${eventId}`);
+        revalidatePath(`/admin/events/${eventId}`);
+
+        if (!emailResult.delivered) {
+            return {
+                success: true,
+                message: `Invite created. No mail provider configured, RSVP link logged on the server: ${inviteUrl}`,
+            };
+        }
+
+        return { success: true, message: 'Invite sent successfully.' };
+    } catch (error) {
+        console.error(error);
+        return { message: 'Failed to create guest invite.' };
+    }
+}
 
 export async function addGuest(eventId: string, prevState: ActionState, formData: FormData): Promise<ActionState> {
     const session = await auth();
