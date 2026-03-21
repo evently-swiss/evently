@@ -89,23 +89,24 @@ export function ImportGuestsModal({ eventId }: ImportGuestsModalProps) {
                     newErrors.push(...results.errors.map(e => `Row ${e.row}: ${e.message}`));
                 }
 
-                results.data.forEach((row: any, index: number) => {
+                results.data.forEach((row: unknown, index: number) => {
                     const lineNum = index + 2; // +1 for 0-index, +1 for header
+                    const csvRow = row as Partial<Record<keyof CSVGuest, string>>;
 
                     // Basic validation
-                    if (!row.firstName || !row.lastName) {
+                    if (!csvRow.firstName || !csvRow.lastName) {
                         newErrors.push(`Row ${lineNum}: Missing first or last name`);
                         return;
                     }
 
                     guests.push({
-                        id: row.id,
-                        firstName: row.firstName,
-                        lastName: row.lastName,
-                        email: row.email,
-                        phone: row.phone,
-                        plusOnesCount: row.plusOnesCount ? parseInt(row.plusOnesCount) : 0,
-                        note: row.note
+                        id: csvRow.id,
+                        firstName: csvRow.firstName,
+                        lastName: csvRow.lastName,
+                        email: csvRow.email,
+                        phone: csvRow.phone,
+                        plusOnesCount: csvRow.plusOnesCount ? parseInt(csvRow.plusOnesCount, 10) : 0,
+                        note: csvRow.note
                     });
                 });
 
@@ -139,7 +140,7 @@ export function ImportGuestsModal({ eventId }: ImportGuestsModalProps) {
                 setFile(null);
                 setParsedGuests([]);
             }
-        } catch (error) {
+        } catch {
             setImportResult({ success: false, message: 'Failed to invoke import action.' });
         } finally {
             setIsImporting(false);

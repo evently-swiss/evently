@@ -7,7 +7,9 @@ import { useState } from 'react';
 import { handleSignOut } from '@/app/admin/actions';
 
 
-export function AdminNav({ session }: { session: any }) {
+type NavSession = { user?: { role?: string } } | null;
+
+export function AdminNav({ session }: { session: NavSession }) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     return (

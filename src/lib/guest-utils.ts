@@ -4,7 +4,7 @@ export function normalizePhone(phone: string | null | undefined): string | null 
     if (!phone) return null;
 
     // Strip spaces, dashes, parens
-    let clean = phone.replace(/[\s\-\(\)]/g, '');
+    const clean = phone.replace(/[\s\-\(\)]/g, '');
 
     // Handle empty
     if (clean.length < 3) return null;

@@ -50,7 +50,12 @@ async function getPromoters() {
     });
 }
 
-function ViaBadge({ guest }: { guest: any }) {
+type ViaBadgeGuest = {
+    signupLink?: { title: string | null; slug: string } | null;
+    promoter?: { name: string | null } | null;
+};
+
+function ViaBadge({ guest }: { guest: ViaBadgeGuest }) {
     if (guest.signupLink) {
         return (
             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-900 text-indigo-200 border border-indigo-700/50 truncate max-w-[150px]">

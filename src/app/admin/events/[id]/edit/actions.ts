@@ -5,6 +5,7 @@ import prisma from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import { ActionState } from '@/lib/definitions';
 
 
 
@@ -26,7 +27,7 @@ const eventSchema = z.object({
     promoterIds: z.array(z.string()).optional(),
 });
 
-export async function updateEvent(id: string, prevState: any, formData: FormData) {
+export async function updateEvent(id: string, prevState: ActionState, formData: FormData) {
     const session = await auth();
     if (!session || session.user.role !== 'ADMIN') {
         return { message: 'Unauthorized' };
@@ -41,7 +42,7 @@ export async function updateEvent(id: string, prevState: any, formData: FormData
         venueName: (formData.get('venueName') as string) || null,
         address: (formData.get('address') as string) || null,
         description: (formData.get('description') as string) || null,
-        status: formData.get('status') as any,
+        status: (formData.get('status') as string) || 'DRAFT',
         capacity: (formData.get('capacity') as string) || null,
         logoUrl: (formData.get('logoUrl') as string) || null,
         heroImageUrl: (formData.get('heroImageUrl') as string) || null,

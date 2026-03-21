@@ -59,7 +59,7 @@ jobs:
           script: |
             set -e
 
-            BRANCH=${GITHUB_REF##*/}
+            BRANCH="${{ github.ref_name }}"
 
             echo "Deploying branch: $BRANCH"
 
@@ -70,12 +70,8 @@ jobs:
             git checkout $BRANCH
             git pull origin $BRANCH
 
-            # Install deps
-            if [ "$BRANCH" = "main" ]; then
-              npm ci --omit=dev
-            else
-              npm ci
-            fi
+            # Install deps (prisma CLI is in devDependencies; always install full deps)
+            npm ci
 
             npx prisma generate
 

@@ -13,8 +13,8 @@ type LinkModalProps = {
     link?: SignupLink & { assignedPromoters?: User[] };
     promoters?: User[];
     userRole: 'ADMIN' | 'PROMOTER';
-    createAction?: (eventId: string, prevState: any, formData: FormData) => Promise<ActionState>;
-    updateAction?: (linkId: string, eventId: string, prevState: any, formData: FormData) => Promise<ActionState>;
+    createAction?: (eventId: string, prevState: ActionState, formData: FormData) => Promise<ActionState>;
+    updateAction?: (linkId: string, eventId: string, prevState: ActionState, formData: FormData) => Promise<ActionState>;
     deleteAction?: (linkId: string, eventId: string) => Promise<ActionState>;
 };
 
@@ -99,7 +99,7 @@ function LinkForm({ mode, eventId, link, promoters, userRole, createAction, upda
                         ) : (
                             <div className="space-y-2">
                                 {promoters.map((user) => {
-                                    const isAssigned = link?.assignedPromoters?.some((p: any) => p.id === user.id) || false;
+                                    const isAssigned = link?.assignedPromoters?.some((p: User) => p.id === user.id) || false;
                                     return (
                                         <div key={user.id} className="flex items-center">
                                             <input

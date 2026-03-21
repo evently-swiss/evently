@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useMemo, useState } from 'react';
+import { useActionState, useState } from 'react';
 import { AlertCircle, Loader2, Minus, Plus } from 'lucide-react';
 import { signupGuest } from '@/app/s/[slug]/actions';
 import { SignupLink } from '@prisma/client';
@@ -33,13 +33,7 @@ export default function SignupForm({ link }: { link: SignupLink }) {
     'mt-1 block w-full rounded-lg border border-[--color-border] bg-[--color-surface-2] px-4 py-3 text-[--color-text-primary] placeholder:text-[--color-text-muted] transition-colors focus:outline-none focus:border-[--color-accent] focus:ring-1 focus:ring-[--color-accent]/30 disabled:opacity-60';
   const labelClasses = 'text-sm font-medium text-[--color-text-secondary]';
 
-  const messageVariant = useMemo(() => {
-    if (!state?.message) {
-      return null;
-    }
-
-    return getMessageVariant(state.message);
-  }, [state?.message]);
+  const messageVariant = state?.message ? getMessageVariant(state.message) : null;
 
   return (
     <form action={dispatch} className="space-y-4">

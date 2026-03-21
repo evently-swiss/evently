@@ -6,7 +6,9 @@ import { ViewSwitcher } from '@/components/ViewSwitcher';
 import { useState } from 'react';
 import { handleSignOut } from '@/app/promoter/actions';
 
-export function PromoterNav({ session }: { session: any }) {
+type NavSession = { user?: { role?: string } } | null;
+
+export function PromoterNav({ session }: { session: NavSession }) {
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     return (

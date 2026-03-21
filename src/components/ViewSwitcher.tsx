@@ -14,16 +14,6 @@ export function ViewSwitcher({ userRole }: ViewSwitcherProps) {
     const dropdownRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
 
-    // Only admins and promoters can see the switcher
-    if (userRole !== 'ADMIN' && userRole !== 'PROMOTER') {
-        return null;
-    }
-
-    // Determine current view
-    let currentView = 'Admin';
-    if (pathname.startsWith('/promoter')) currentView = 'Promoter';
-    if (pathname.startsWith('/door')) currentView = 'Door';
-
     // Close dropdown when clicking outside
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
@@ -36,6 +26,16 @@ export function ViewSwitcher({ userRole }: ViewSwitcherProps) {
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, []);
+
+    // Only admins and promoters can see the switcher
+    if (userRole !== 'ADMIN' && userRole !== 'PROMOTER') {
+        return null;
+    }
+
+    // Determine current view
+    let currentView = 'Admin';
+    if (pathname.startsWith('/promoter')) currentView = 'Promoter';
+    if (pathname.startsWith('/door')) currentView = 'Door';
 
     return (
         <div className="relative" ref={dropdownRef}>

@@ -3,12 +3,13 @@
 import prisma from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import { ActionState } from '@/lib/definitions';
 
 
 
 import { normalizePhone, findDuplicateGuest } from '@/lib/guest-utils';
 
-export async function signupGuest(slug: string, prevState: any, formData: FormData) {
+export async function signupGuest(slug: string, prevState: ActionState, formData: FormData) {
     // 1. Fetch Link & Event
     const link = await prisma.signupLink.findUnique({
         where: { slug },
