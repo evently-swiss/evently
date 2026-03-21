@@ -1,19 +1,25 @@
-name: CI/CD
+name: Evently CI/CD
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+      - dev
   pull_request:
-    branches: [main]
+    branches:
+      - main
 
 jobs:
   ci:
+    name: Build & Lint
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: npm
@@ -25,31 +31,76 @@ jobs:
       - name: Lint
         run: npm run lint
 
-      - name: Build
+      - name: Build (test build)
         run: npm run build
         env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          DIRECT_URL: ${{ secrets.DIRECT_URL || secrets.DATABASE_URL }}
-          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
-          NEXTAUTH_URL: https://evently.swiss
-          APP_URL: https://evently.swiss
+          DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+          DIRECT_URL: "postgresql://ci:ci@localhost:5432/ci"
+          NEXTAUTH_SECRET: "ci-secret"
+          NEXTAUTH_URL: "http://localhost:3000"
+          AUTH_TRUST_HOST: "true"
 
   deploy:
+    name: Deploy to VPS
     needs: ci
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.event_name == 'push'
+
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
 
     steps:
-      - name: Deploy to Infomaniak VPS
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.INFOMANIAK_HOST }}
           username: ${{ secrets.INFOMANIAK_USER }}
           key: ${{ secrets.INFOMANIAK_SSH_KEY }}
           script: |
+            set -e
+
+            BRANCH=${GITHUB_REF##*/}
+
+            echo "Deploying branch: $BRANCH"
+
             cd /var/www/evently
-            git pull origin main
-            npm ci --omit=dev
+
+            # Sync repo
+            git fetch origin
+            git checkout $BRANCH
+            git pull origin $BRANCH
+
+            # Install deps
+            if [ "$BRANCH" = "main" ]; then
+              npm ci --omit=dev
+            else
+              npm ci
+            fi
+
+            npx prisma generate
+
+            # Set ENV (comes from environment secrets automatically)
+            export DATABASE_URL='${{ secrets.DATABASE_URL }}'
+            export DIRECT_URL='${{ secrets.DIRECT_URL }}'
+            export NEXTAUTH_SECRET='${{ secrets.NEXTAUTH_SECRET }}'
+            export NEXTAUTH_URL='${{ secrets.NEXTAUTH_URL }}'
+            export AUTH_TRUST_HOST='${{ secrets.AUTH_TRUST_HOST }}'
+            export RESEND_API_KEY='${{ secrets.RESEND_API_KEY }}'
+            export RESEND_FROM_EMAIL='${{ secrets.RESEND_FROM_EMAIL }}'
+
+            # Run migrations
             npx prisma migrate deploy
+
+            # Build
             npm run build
-            pm2 restart evently
+
+            # Restart correct app
+            if [ "$BRANCH" = "main" ]; then
+              echo "PRODUCTION"
+              pm2 reload evently-prod --update-env
+            elif [ "$BRANCH" = "dev" ]; then
+              echo "DEVELOPMENT"
+              pm2 reload evently-dev --update-env
+            fi
+
+            echo "Deploy finished"
