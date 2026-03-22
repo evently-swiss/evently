@@ -18,9 +18,15 @@ const userSchema = z.object({
     role: z.enum(['ADMIN', 'PROMOTER', 'ENTRY_STAFF']),
 });
 
+const updateUserSchema = z.object({
+    name: z.string().min(1),
+    email: z.string().email(),
+    role: z.enum(['ADMIN', 'PROMOTER', 'ENTRY_STAFF']),
+});
+
 export async function createUser(prevState: ActionState, formData: FormData): Promise<ActionState> {
     const session = await auth();
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || session.user.role !== 'SUPER_ADMIN') {
         return { message: 'Unauthorized' };
     }
 
@@ -55,9 +61,65 @@ export async function createUser(prevState: ActionState, formData: FormData): Pr
     redirect('/admin/users');
 }
 
-export async function deleteUser(userId: string, formData: FormData) {
+export async function updateUser(userId: string, prevState: ActionState, formData: FormData): Promise<ActionState> {
     const session = await auth();
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || session.user.role !== 'SUPER_ADMIN') {
+        return { message: 'Unauthorized' };
+    }
+
+    const validatedFields = updateUserSchema.safeParse({
+        name: formData.get('name') as string,
+        email: formData.get('email') as string,
+        role: formData.get('role') as string,
+    });
+
+    if (!validatedFields.success) {
+        return { errors: validatedFields.error.flatten().fieldErrors };
+    }
+
+    const existingUser = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, role: true },
+    });
+
+    if (!existingUser) {
+        return { message: 'User not found.' };
+    }
+
+    const { name, email, role } = validatedFields.data;
+
+    // SUPER_ADMIN role cannot be changed through this form — preserve it.
+    const effectiveRole: Role = existingUser.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : (role as Role);
+
+    if (session.user.id === userId && existingUser.role === 'ADMIN' && role !== 'ADMIN') {
+        const adminCount = await prisma.user.count({ where: { role: 'ADMIN' } });
+        if (adminCount <= 1) {
+            return { message: 'Cannot demote yourself. You are the last admin.' };
+        }
+    }
+
+    try {
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                name,
+                email,
+                role: effectiveRole,
+            },
+        });
+    } catch (error) {
+        console.error(error);
+        return { message: 'Failed to update user. Email might be taken.' };
+    }
+
+    revalidatePath('/admin/users');
+    revalidatePath(`/admin/users/${userId}/edit`);
+    redirect('/admin/users');
+}
+
+export async function deleteUser(userId: string) {
+    const session = await auth();
+    if (!session || session.user.role !== 'SUPER_ADMIN') {
         // return { message: 'Unauthorized' };
         return;
     }

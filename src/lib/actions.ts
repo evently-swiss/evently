@@ -2,8 +2,6 @@
 
 import { signIn } from '@/lib/auth';
 import { AuthError, CredentialsSignin } from 'next-auth';
-import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth';
 
 export async function authenticate(
     prevState: string | undefined,
@@ -19,7 +17,7 @@ export async function authenticate(
         const user = await getUser(email);
         if (user) {
             switch (user.role) {
-                case 'ADMIN':
+                case 'SUPER_ADMIN':
                     redirectPath = '/admin';
                     break;
                 case 'PROMOTER':

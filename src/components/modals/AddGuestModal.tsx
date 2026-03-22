@@ -7,7 +7,7 @@ import { ActionState } from '@/lib/definitions';
 
 type AddGuestModalProps = {
     eventId: string;
-    addGuestAction: (eventId: string, prevState: any, formData: FormData) => Promise<ActionState>;
+    addGuestAction: (eventId: string, prevState: ActionState, formData: FormData) => Promise<ActionState>;
 };
 
 function AddGuestForm({ eventId, addGuestAction, onSuccess }: AddGuestModalProps & { onSuccess: () => void }) {

@@ -7,7 +7,7 @@ import { Plus } from 'lucide-react';
 
 
 async function getPromoterEvents(userId: string, role: string) {
-    if (role === 'ADMIN') {
+    if (role === 'SUPER_ADMIN') {
         // Admins see ALL events and ALL links (except archived)
         return await prisma.event.findMany({
             where: { status: { not: 'ARCHIVED' } },

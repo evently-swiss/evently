@@ -23,7 +23,7 @@ const linkSchema = z.object({
 
 export async function createPromoterLink(eventId: string, prevState: ActionState, formData: FormData): Promise<ActionState> {
     const session = await auth();
-    if (!session || (session.user.role !== 'PROMOTER' && session.user.role !== 'ADMIN')) {
+    if (!session || (session.user.role !== 'PROMOTER' && session.user.role !== 'SUPER_ADMIN')) {
         return { message: 'Unauthorized' };
     }
 
@@ -73,7 +73,7 @@ export async function createPromoterLink(eventId: string, prevState: ActionState
 
 export async function updatePromoterLink(linkId: string, eventId: string, prevState: ActionState, formData: FormData): Promise<ActionState> {
     const session = await auth();
-    if (!session || (session.user.role !== 'PROMOTER' && session.user.role !== 'ADMIN')) {
+    if (!session || (session.user.role !== 'PROMOTER' && session.user.role !== 'SUPER_ADMIN')) {
         return { message: 'Unauthorized' };
     }
 
@@ -138,7 +138,7 @@ export async function updatePromoterLink(linkId: string, eventId: string, prevSt
 
 export async function deletePromoterLink(linkId: string, eventId: string): Promise<ActionState> {
     const session = await auth();
-    if (!session || (session.user.role !== 'PROMOTER' && session.user.role !== 'ADMIN')) {
+    if (!session || (session.user.role !== 'PROMOTER' && session.user.role !== 'SUPER_ADMIN')) {
         return { message: 'Unauthorized' };
     }
 
@@ -194,7 +194,7 @@ function getBaseUrl() {
 
 export async function inviteGuest(eventId: string, prevState: ActionState, formData: FormData): Promise<ActionState> {
     const session = await auth();
-    if (!session || (session.user.role !== 'PROMOTER' && session.user.role !== 'ADMIN')) {
+    if (!session || (session.user.role !== 'PROMOTER' && session.user.role !== 'SUPER_ADMIN')) {
         return { message: 'Unauthorized' };
     }
 
@@ -269,7 +269,7 @@ export async function inviteGuest(eventId: string, prevState: ActionState, formD
 
 export async function addGuest(eventId: string, prevState: ActionState, formData: FormData): Promise<ActionState> {
     const session = await auth();
-    if (!session || (session.user.role !== 'PROMOTER' && session.user.role !== 'ADMIN')) {
+    if (!session || (session.user.role !== 'PROMOTER' && session.user.role !== 'SUPER_ADMIN')) {
         return { message: 'Unauthorized' };
     }
 
@@ -322,7 +322,7 @@ export async function addGuest(eventId: string, prevState: ActionState, formData
 
 export async function updateGuest(guestId: string, eventId: string, prevState: ActionState, formData: FormData): Promise<ActionState> {
     const session = await auth();
-    if (!session || (session.user.role !== 'PROMOTER' && session.user.role !== 'ADMIN')) {
+    if (!session || (session.user.role !== 'PROMOTER' && session.user.role !== 'SUPER_ADMIN')) {
         return { message: 'Unauthorized' };
     }
 
@@ -399,7 +399,7 @@ export async function updateGuest(guestId: string, eventId: string, prevState: A
 
 export async function deleteGuest(guestId: string, eventId: string): Promise<ActionState> {
     const session = await auth();
-    if (!session || (session.user.role !== 'PROMOTER' && session.user.role !== 'ADMIN')) {
+    if (!session || (session.user.role !== 'PROMOTER' && session.user.role !== 'SUPER_ADMIN')) {
         return { message: 'Unauthorized' };
     }
 

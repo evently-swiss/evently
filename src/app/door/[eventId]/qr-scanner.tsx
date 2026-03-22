@@ -7,13 +7,18 @@ type QrScannerProps = {
   eventId: string;
 };
 
+type ScannerInstance = {
+  stop: () => Promise<void>;
+  clear: () => void;
+};
+
 export default function QrScanner({ eventId }: QrScannerProps) {
   const [status, setStatus] = useState<{ type: 'idle' | 'success' | 'error'; message: string }>({
     type: 'idle',
     message: 'Point the camera at a guest QR code.',
   });
   const [isStarting, setIsStarting] = useState(true);
-  const scannerRef = useRef<any>(null);
+  const scannerRef = useRef<ScannerInstance | null>(null);
   const isHandlingScanRef = useRef(false);
 
   useEffect(() => {

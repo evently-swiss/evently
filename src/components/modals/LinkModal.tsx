@@ -12,9 +12,9 @@ type LinkModalProps = {
     eventId: string;
     link?: SignupLink & { assignedPromoters?: User[] };
     promoters?: User[];
-    userRole: 'ADMIN' | 'PROMOTER';
-    createAction?: (eventId: string, prevState: any, formData: FormData) => Promise<ActionState>;
-    updateAction?: (linkId: string, eventId: string, prevState: any, formData: FormData) => Promise<ActionState>;
+    userRole: 'SUPER_ADMIN' | 'PROMOTER';
+    createAction?: (eventId: string, prevState: ActionState, formData: FormData) => Promise<ActionState>;
+    updateAction?: (linkId: string, eventId: string, prevState: ActionState, formData: FormData) => Promise<ActionState>;
     deleteAction?: (linkId: string, eventId: string) => Promise<ActionState>;
 };
 
@@ -31,7 +31,7 @@ function LinkForm({ mode, eventId, link, promoters, userRole, createAction, upda
         }
     }, [state, onSuccess]);
 
-    const isAdmin = userRole === 'ADMIN';
+    const isAdmin = userRole === 'SUPER_ADMIN';
     const showTypeSelect = isAdmin || (mode === 'create');
     const showPromoterSelect = true; // Show for both admins and promoters
     const showActiveCheckbox = mode === 'edit';
@@ -99,7 +99,7 @@ function LinkForm({ mode, eventId, link, promoters, userRole, createAction, upda
                         ) : (
                             <div className="space-y-2">
                                 {promoters.map((user) => {
-                                    const isAssigned = link?.assignedPromoters?.some((p: any) => p.id === user.id) || false;
+                                    const isAssigned = link?.assignedPromoters?.some((p: User) => p.id === user.id) || false;
                                     return (
                                         <div key={user.id} className="flex items-center">
                                             <input
@@ -186,7 +186,7 @@ function LinkForm({ mode, eventId, link, promoters, userRole, createAction, upda
 }
 
 export function LinkModal(props: LinkModalProps) {
-    const { mode, link, userRole } = props;
+    const { mode, userRole } = props;
     const [isOpen, setIsOpen] = useState(false);
     const [version, setVersion] = useState(0);
 
@@ -196,7 +196,7 @@ export function LinkModal(props: LinkModalProps) {
     };
 
     const title = mode === 'create'
-        ? (userRole === 'ADMIN' ? 'Create Signup Link' : 'Create My Link')
+        ? (userRole === 'SUPER_ADMIN' ? 'Create Signup Link' : 'Create My Link')
         : 'Edit Signup Link';
 
     const TriggerButton = mode === 'create' ? (

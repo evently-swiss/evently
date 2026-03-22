@@ -1,6 +1,5 @@
 'use server';
 
-import { EventStatus } from '@prisma/client';
 import prisma from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
@@ -27,9 +26,9 @@ const eventSchema = z.object({
     promoterIds: z.array(z.string()).optional(),
 });
 
-export async function createEvent(prevState: any, formData: FormData) {
+export async function createEvent(prevState: ActionState, formData: FormData) {
     const session = await auth();
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || session.user.role !== 'SUPER_ADMIN') {
         return { message: 'Unauthorized' };
     }
 
@@ -42,7 +41,7 @@ export async function createEvent(prevState: any, formData: FormData) {
         venueName: (formData.get('venueName') as string) || undefined,
         address: (formData.get('address') as string) || undefined,
         description: (formData.get('description') as string) || undefined,
-        status: formData.get('status') as any,
+        status: (formData.get('status') as string) || 'DRAFT',
         capacity: (formData.get('capacity') as string) || undefined,
         logoUrl: (formData.get('logoUrl') as string) || undefined,
         heroImageUrl: (formData.get('heroImageUrl') as string) || undefined,

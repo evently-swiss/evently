@@ -21,7 +21,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
           cache-dependency-path: package-lock.json
 
@@ -50,6 +50,16 @@ jobs:
       name: ${{ github.ref == 'refs/heads/main' && 'production' || 'development' }}
 
     steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+
       - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -60,7 +70,7 @@ jobs:
           script: |
             set -e
 
-            BRANCH=${GITHUB_REF##*/}
+            BRANCH="${{ github.ref_name }}"
 
             echo "Deploying branch: $BRANCH"
 
@@ -71,12 +81,12 @@ jobs:
             git checkout $BRANCH
             git pull origin $BRANCH
 
-            # Install deps
-            if [ "$BRANCH" = "main" ]; then
-              npm ci --omit=dev
-            else
-              npm ci
-            fi
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            nvm use 20
+
+            # Install deps (prisma CLI is in devDependencies; always install full deps)
+            npm ci
 
             npx prisma generate
 
@@ -105,3 +115,20 @@ jobs:
             fi
 
             echo "Deploy finished"
+
+      - name: Install dependencies (for smoke test)
+        if: github.ref == 'refs/heads/dev'
+        run: npm ci
+
+      - name: Install Playwright Chromium
+        if: github.ref == 'refs/heads/dev'
+        run: npx playwright install --with-deps chromium
+
+      - name: Run dev smoke E2E
+        if: github.ref == 'refs/heads/dev'
+        run: npm run test:e2e:dev-smoke
+        env:
+          PLAYWRIGHT_BASE_URL: "https://dev.evently.swiss"
+          E2E_ADMIN_EMAIL: ${{ secrets.DEV_SMOKE_ADMIN_EMAIL }}
+          E2E_ADMIN_PASSWORD: ${{ secrets.DEV_SMOKE_ADMIN_PASSWORD }}
+          E2E_GUEST_EMAIL: ${{ secrets.DEV_SMOKE_GUEST_EMAIL }}

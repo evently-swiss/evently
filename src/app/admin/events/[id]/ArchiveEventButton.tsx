@@ -1,7 +1,7 @@
 'use client';
 
 export function ArchiveEventButton({ archiveAction }: { archiveAction: () => Promise<unknown> }) {
-    const handleAction = async (_formData: FormData) => {
+    const handleAction = async () => {
         await archiveAction();
     };
 

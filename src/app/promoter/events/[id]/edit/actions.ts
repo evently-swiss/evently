@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import { ActionState } from '@/lib/definitions';
 
 
 
@@ -18,9 +19,9 @@ const eventSchema = z.object({
     capacity: z.string().transform((val) => (val ? parseInt(val, 10) : null)).nullable().optional(),
 });
 
-export async function updateEvent(id: string, prevState: any, formData: FormData) {
+export async function updateEvent(id: string, prevState: ActionState, formData: FormData) {
     const session = await auth();
-    if (!session || (session.user.role !== 'PROMOTER' && session.user.role !== 'ADMIN')) {
+    if (!session || (session.user.role !== 'PROMOTER' && session.user.role !== 'SUPER_ADMIN')) {
         return { message: 'Unauthorized' };
     }
 
@@ -41,7 +42,7 @@ export async function updateEvent(id: string, prevState: any, formData: FormData
         startTime: (formData.get('startTime') as string) || null,
         endTime: (formData.get('endTime') as string) || null,
         venueName: (formData.get('venueName') as string) || null,
-        status: formData.get('status') as any,
+        status: (formData.get('status') as string) || 'DRAFT',
         capacity: (formData.get('capacity') as string) || null,
     };
 

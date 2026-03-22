@@ -33,7 +33,7 @@ export default async function ConfirmationPage({ searchParams }: PageProps) {
           <CheckCircle className="h-20 w-20 text-green-500" />
         </div>
 
-        <h1 className="text-3xl font-bold">You're on the list!</h1>
+        <h1 className="text-3xl font-bold">You&apos;re on the list!</h1>
 
         {guest ? (
           <p className="text-gray-400">

@@ -1,9 +1,8 @@
 import prisma from '@/lib/prisma';
-import { LinkType, FieldMode } from '@prisma/client';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
-import { CloudDownload, Tags, User as UserIcon, Link as LinkIcon, Hand } from 'lucide-react';
+import { CloudDownload, User as UserIcon, Link as LinkIcon, Hand } from 'lucide-react';
 import { LinkModal } from '@/components/modals/LinkModal';
 import { createLink, updateLink, deleteLink, archiveEvent, unarchiveEvent } from './actions';
 import { ArchiveEventButton } from './ArchiveEventButton';
@@ -50,7 +49,12 @@ async function getPromoters() {
     });
 }
 
-function ViaBadge({ guest }: { guest: any }) {
+type ViaBadgeGuest = {
+    signupLink?: { title: string | null; slug: string } | null;
+    promoter?: { name: string | null } | null;
+};
+
+function ViaBadge({ guest }: { guest: ViaBadgeGuest }) {
     if (guest.signupLink) {
         return (
             <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-900 text-indigo-200 border border-indigo-700/50 truncate max-w-[150px]">
@@ -154,7 +158,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
             <div className="mt-8">
                 <div className="flex justify-between items-center mb-4">
                     <h3 className="text-lg font-medium leading-6 text-white">Signup Links</h3>
-                    <LinkModal mode="create" eventId={event.id} promoters={promoters} userRole="ADMIN" createAction={createLink} />
+                    <LinkModal mode="create" eventId={event.id} promoters={promoters} userRole="SUPER_ADMIN" createAction={createLink} />
                 </div>
 
                 <div className="bg-gray-900 shadow overflow-hidden sm:rounded-md border border-gray-800">
@@ -189,7 +193,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                                                 {(link._count.guests + (link.guests?.reduce((sum, g) => sum + g.plusOnesCount, 0) || 0))} / {link.maxTotalGuests || '∞'}
                                             </span>
                                             <div className="flex items-center gap-2">
-                                                <LinkModal mode="edit" eventId={event.id} link={link} promoters={promoters} userRole="ADMIN" updateAction={updateLink} deleteAction={deleteLink} />
+                                                <LinkModal mode="edit" eventId={event.id} link={link} promoters={promoters} userRole="SUPER_ADMIN" updateAction={updateLink} deleteAction={deleteLink} />
                                                 <CopyLinkButton slug={link.slug} />
                                             </div>
                                         </div>

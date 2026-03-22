@@ -15,7 +15,7 @@ import { RsvpStatusBadge } from '@/components/RsvpStatusBadge';
 
 
 async function getPromoterEvent(id: string, userId: string, role: string) {
-    if (role === 'ADMIN') {
+    if (role === 'SUPER_ADMIN') {
         const event = await prisma.event.findUnique({
             where: { id },
             include: {

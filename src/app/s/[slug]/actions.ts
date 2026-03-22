@@ -3,12 +3,13 @@
 import prisma from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import { ActionState } from '@/lib/definitions';
 
 
 
 import { normalizePhone, findDuplicateGuest } from '@/lib/guest-utils';
 
-export async function signupGuest(slug: string, prevState: any, formData: FormData) {
+export async function signupGuest(slug: string, prevState: ActionState, formData: FormData) {
     // 1. Fetch Link & Event
     const link = await prisma.signupLink.findUnique({
         where: { slug },
@@ -49,6 +50,15 @@ export async function signupGuest(slug: string, prevState: any, formData: FormDa
         return { message: `You can only bring up to ${link.maxPlusOnesPerSignup} guests.` };
     }
 
+    const rawEmail = (formData.get('email') as string) || '';
+    const rawPhone = (formData.get('phone') as string) || '';
+    const hasSubmittedHiddenEmail = link.emailMode === 'HIDDEN' && rawEmail.trim().length > 0;
+    const hasSubmittedHiddenPhone = link.phoneMode === 'HIDDEN' && rawPhone.trim().length > 0;
+
+    if (hasSubmittedHiddenEmail || hasSubmittedHiddenPhone) {
+        return { message: 'This signup link does not accept email or phone values.' };
+    }
+
     const schema = z.object({
         firstName: z.string().min(1, "First name is required"),
         lastName: z.string().min(1, "Last name is required"),
@@ -60,8 +70,8 @@ export async function signupGuest(slug: string, prevState: any, formData: FormDa
     const validatedFields = schema.safeParse({
         firstName: formData.get('firstName'),
         lastName: formData.get('lastName'),
-        email: (formData.get('email') as string) || undefined,
-        phone: (formData.get('phone') as string) || undefined,
+        email: rawEmail,
+        phone: rawPhone,
         note: (formData.get('note') as string) || undefined,
     });
 
@@ -110,6 +120,9 @@ export async function signupGuest(slug: string, prevState: any, formData: FormDa
 
         redirect(`/s/${slug}/confirmation?token=${encodeURIComponent(guest.qrToken)}`);
     } catch (error) {
+        if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {
+            throw error;
+        }
         console.error(error);
         return { message: 'Failed to sign up. Please try again.' };
     }

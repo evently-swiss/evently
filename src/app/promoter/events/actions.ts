@@ -23,7 +23,7 @@ const eventSchema = z.object({
 
 export async function createPromoterEvent(prevState: ActionState, formData: FormData): Promise<ActionState> {
     const session = await auth();
-    if (!session || (session.user.role !== 'PROMOTER' && session.user.role !== 'ADMIN')) {
+    if (!session || (session.user.role !== 'PROMOTER' && session.user.role !== 'SUPER_ADMIN')) {
         return { message: 'Unauthorized' };
     }
 
@@ -79,9 +79,9 @@ const guestSchema = z.object({
 
 const importGuestsSchema = z.array(guestSchema);
 
-export async function importGuests(eventId: string, prevState: ActionState, guests: any[]): Promise<ActionState> {
+export async function importGuests(eventId: string, prevState: ActionState, guests: unknown[]): Promise<ActionState> {
     const session = await auth();
-    if (!session || (session.user.role !== 'PROMOTER' && session.user.role !== 'ADMIN')) {
+    if (!session || (session.user.role !== 'PROMOTER' && session.user.role !== 'SUPER_ADMIN')) {
         return { message: 'Unauthorized' };
     }
 

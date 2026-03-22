@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useActionState } from 'react';
 import { updateLink } from './actions';
-import { Pencil, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { User, SignupLink } from '@prisma/client';
 import { ActionState } from '@/lib/definitions';
 import { Select } from '@/components/ui/Select';

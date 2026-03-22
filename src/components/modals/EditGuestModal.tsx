@@ -9,7 +9,7 @@ import { ActionState } from '@/lib/definitions';
 type EditGuestModalProps = {
     eventId: string;
     guest: Guest;
-    updateAction: (guestId: string, eventId: string, prevState: any, formData: FormData) => Promise<ActionState>;
+    updateAction: (guestId: string, eventId: string, prevState: ActionState, formData: FormData) => Promise<ActionState>;
     deleteAction: (guestId: string, eventId: string) => Promise<ActionState>;
 };
 
