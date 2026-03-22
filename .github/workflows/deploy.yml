@@ -70,6 +70,8 @@ jobs:
             git checkout $BRANCH
             git pull origin $BRANCH
 
+            export PATH=$PATH:/usr/bin:/usr/local/bin
+
             # Install deps (prisma CLI is in devDependencies; always install full deps)
             npm ci
 
