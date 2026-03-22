@@ -17,7 +17,7 @@ export const authConfig = {
             } else if (isLoggedIn && nextUrl.pathname === '/login') {
                 // Redirect logged-in users away from login page to their dashboard
                 const role = (auth.user as { role?: string }).role;
-                if (role === 'ADMIN') {
+                if (role === 'SUPER_ADMIN') {
                     return Response.redirect(new URL('/admin', nextUrl));
                 } else if (role === 'PROMOTER') {
                     return Response.redirect(new URL('/promoter', nextUrl));

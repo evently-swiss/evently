@@ -27,8 +27,8 @@ export function ViewSwitcher({ userRole }: ViewSwitcherProps) {
         };
     }, []);
 
-    // Only admins and promoters can see the switcher
-    if (userRole !== 'ADMIN' && userRole !== 'PROMOTER') {
+    // Only super admins and promoters can see the switcher
+    if (userRole !== 'SUPER_ADMIN' && userRole !== 'PROMOTER') {
         return null;
     }
 
@@ -50,7 +50,7 @@ export function ViewSwitcher({ userRole }: ViewSwitcherProps) {
 
             {isOpen && (
                 <div className="absolute right-0 mt-2 w-48 bg-gray-900 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 focus:outline-none z-50 border border-gray-800">
-                    {userRole === 'ADMIN' && (
+                    {userRole === 'SUPER_ADMIN' && (
                         <Link
                             href="/admin"
                             className={`block px-4 py-2 text-sm text-gray-300 hover:bg-gray-800 hover:text-white flex items-center ${currentView === 'Admin' ? 'bg-gray-800 text-white' : ''}`}

@@ -24,7 +24,7 @@ const linkSchema = z.object({
 
 export async function createLink(eventId: string, prevState: ActionState, formData: FormData): Promise<ActionState> {
     const session = await auth();
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || session.user.role !== 'SUPER_ADMIN') {
         return { message: 'Unauthorized' };
     }
 
@@ -77,7 +77,7 @@ export async function createLink(eventId: string, prevState: ActionState, formDa
 
 export async function updateLink(linkId: string, eventId: string, prevState: ActionState, formData: FormData): Promise<ActionState> {
     const session = await auth();
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || session.user.role !== 'SUPER_ADMIN') {
         return { message: 'Unauthorized' };
     }
 
@@ -134,7 +134,7 @@ export async function updateLink(linkId: string, eventId: string, prevState: Act
 
 export async function deleteLink(linkId: string, eventId: string): Promise<ActionState> {
     const session = await auth();
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || session.user.role !== 'SUPER_ADMIN') {
         return { message: 'Unauthorized' };
     }
 
@@ -153,7 +153,7 @@ export async function deleteLink(linkId: string, eventId: string): Promise<Actio
 
 export async function archiveEvent(eventId: string): Promise<ActionState> {
     const session = await auth();
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || session.user.role !== 'SUPER_ADMIN') {
         return { message: 'Unauthorized' };
     }
 
@@ -174,7 +174,7 @@ export async function archiveEvent(eventId: string): Promise<ActionState> {
 
 export async function unarchiveEvent(eventId: string): Promise<void> {
     const session = await auth();
-    if (!session || session.user.role !== 'ADMIN') return;
+    if (!session || session.user.role !== 'SUPER_ADMIN') return;
 
     try {
         await prisma.event.update({

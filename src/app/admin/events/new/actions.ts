@@ -28,7 +28,7 @@ const eventSchema = z.object({
 
 export async function createEvent(prevState: ActionState, formData: FormData) {
     const session = await auth();
-    if (!session || session.user.role !== 'ADMIN') {
+    if (!session || session.user.role !== 'SUPER_ADMIN') {
         return { message: 'Unauthorized' };
     }
 

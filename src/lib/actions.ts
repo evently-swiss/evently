@@ -17,7 +17,7 @@ export async function authenticate(
         const user = await getUser(email);
         if (user) {
             switch (user.role) {
-                case 'ADMIN':
+                case 'SUPER_ADMIN':
                     redirectPath = '/admin';
                     break;
                 case 'PROMOTER':

@@ -22,7 +22,7 @@ async function getEvent(id: string, userId: string) {
 
 export default async function EditEventPage({ params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
-    if (!session || (session.user.role !== 'PROMOTER' && session.user.role !== 'ADMIN')) {
+    if (!session || (session.user.role !== 'PROMOTER' && session.user.role !== 'SUPER_ADMIN')) {
         redirect('/login');
     }
 

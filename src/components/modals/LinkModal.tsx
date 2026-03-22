@@ -12,7 +12,7 @@ type LinkModalProps = {
     eventId: string;
     link?: SignupLink & { assignedPromoters?: User[] };
     promoters?: User[];
-    userRole: 'ADMIN' | 'PROMOTER';
+    userRole: 'SUPER_ADMIN' | 'PROMOTER';
     createAction?: (eventId: string, prevState: ActionState, formData: FormData) => Promise<ActionState>;
     updateAction?: (linkId: string, eventId: string, prevState: ActionState, formData: FormData) => Promise<ActionState>;
     deleteAction?: (linkId: string, eventId: string) => Promise<ActionState>;
@@ -31,7 +31,7 @@ function LinkForm({ mode, eventId, link, promoters, userRole, createAction, upda
         }
     }, [state, onSuccess]);
 
-    const isAdmin = userRole === 'ADMIN';
+    const isAdmin = userRole === 'SUPER_ADMIN';
     const showTypeSelect = isAdmin || (mode === 'create');
     const showPromoterSelect = true; // Show for both admins and promoters
     const showActiveCheckbox = mode === 'edit';
@@ -196,7 +196,7 @@ export function LinkModal(props: LinkModalProps) {
     };
 
     const title = mode === 'create'
-        ? (userRole === 'ADMIN' ? 'Create Signup Link' : 'Create My Link')
+        ? (userRole === 'SUPER_ADMIN' ? 'Create Signup Link' : 'Create My Link')
         : 'Edit Signup Link';
 
     const TriggerButton = mode === 'create' ? (

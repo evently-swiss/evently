@@ -6,7 +6,7 @@ import { auth } from '@/lib/auth';
 
 
 async function getTodayEvents(userId: string, role: string) {
-    if (role === 'ADMIN') {
+    if (role === 'SUPER_ADMIN') {
         return await prisma.event.findMany({
             where: { status: 'PUBLISHED' },
             orderBy: { date: 'desc' },

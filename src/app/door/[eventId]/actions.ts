@@ -41,7 +41,7 @@ async function upsertCheckIn(guestId: string, userId: string, count: number): Pr
 
 export async function checkInGuest(guestId: string, eventId: string, count: number = 1): Promise<ActionState> {
     const session = await auth();
-    if (!session || (session.user.role !== 'ENTRY_STAFF' && session.user.role !== 'ADMIN')) {
+    if (!session || (session.user.role !== 'ENTRY_STAFF' && session.user.role !== 'SUPER_ADMIN')) {
         return { message: 'Unauthorized', success: false };
     }
 
@@ -61,7 +61,7 @@ export async function checkInGuest(guestId: string, eventId: string, count: numb
 
 export async function checkInByToken(token: string, eventId: string): Promise<ActionState> {
     const session = await auth();
-    if (!session || (session.user.role !== 'ENTRY_STAFF' && session.user.role !== 'ADMIN')) {
+    if (!session || (session.user.role !== 'ENTRY_STAFF' && session.user.role !== 'SUPER_ADMIN')) {
         return { message: 'Unauthorized', success: false };
     }
 
@@ -108,7 +108,7 @@ export async function checkInByToken(token: string, eventId: string): Promise<Ac
 
 export async function checkOutGuest(guestId: string, eventId: string, count: number = 1): Promise<ActionState> {
     const session = await auth();
-    if (!session || (session.user.role !== 'ENTRY_STAFF' && session.user.role !== 'ADMIN')) {
+    if (!session || (session.user.role !== 'ENTRY_STAFF' && session.user.role !== 'SUPER_ADMIN')) {
         return { message: 'Unauthorized', success: false };
     }
 

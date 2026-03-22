@@ -50,6 +50,15 @@ export async function signupGuest(slug: string, prevState: ActionState, formData
         return { message: `You can only bring up to ${link.maxPlusOnesPerSignup} guests.` };
     }
 
+    const rawEmail = (formData.get('email') as string) || '';
+    const rawPhone = (formData.get('phone') as string) || '';
+    const hasSubmittedHiddenEmail = link.emailMode === 'HIDDEN' && rawEmail.trim().length > 0;
+    const hasSubmittedHiddenPhone = link.phoneMode === 'HIDDEN' && rawPhone.trim().length > 0;
+
+    if (hasSubmittedHiddenEmail || hasSubmittedHiddenPhone) {
+        return { message: 'This signup link does not accept email or phone values.' };
+    }
+
     const schema = z.object({
         firstName: z.string().min(1, "First name is required"),
         lastName: z.string().min(1, "Last name is required"),
@@ -61,8 +70,8 @@ export async function signupGuest(slug: string, prevState: ActionState, formData
     const validatedFields = schema.safeParse({
         firstName: formData.get('firstName'),
         lastName: formData.get('lastName'),
-        email: (formData.get('email') as string) || undefined,
-        phone: (formData.get('phone') as string) || undefined,
+        email: rawEmail,
+        phone: rawPhone,
         note: (formData.get('note') as string) || undefined,
     });
 
@@ -111,6 +120,9 @@ export async function signupGuest(slug: string, prevState: ActionState, formData
 
         redirect(`/s/${slug}/confirmation?token=${encodeURIComponent(guest.qrToken)}`);
     } catch (error) {
+        if (error instanceof Error && error.message.includes('NEXT_REDIRECT')) {
+            throw error;
+        }
         console.error(error);
         return { message: 'Failed to sign up. Please try again.' };
     }
