@@ -47,16 +47,24 @@ export function EditUserForm({ user }: { user: EditableUser }) {
             </div>
 
             <div>
-                <Select label="Role" name="role" id="role" defaultValue={user.role === 'SUPER_ADMIN' ? 'ADMIN' : user.role}>
-                    <option value="PROMOTER">Promoter</option>
-                    <option value="ENTRY_STAFF">Entry Staff</option>
-                    <option value="ADMIN">Admin</option>
-                </Select>
                 {user.role === 'SUPER_ADMIN' ? (
-                    <p className="text-amber-400 text-sm mt-2">
-                        This user currently has SUPER_ADMIN role. Saving here will set role to ADMIN/PROMOTER/ENTRY_STAFF.
-                    </p>
-                ) : null}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-400">Role</label>
+                        <div className="mt-1 flex items-center gap-2">
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-900 text-indigo-200">
+                                SUPER_ADMIN
+                            </span>
+                            <span className="text-sm text-gray-500">This role cannot be changed here.</span>
+                        </div>
+                        <input type="hidden" name="role" value="ADMIN" />
+                    </div>
+                ) : (
+                    <Select label="Role" name="role" id="role" defaultValue={user.role}>
+                        <option value="PROMOTER">Promoter</option>
+                        <option value="ENTRY_STAFF">Entry Staff</option>
+                        <option value="ADMIN">Admin</option>
+                    </Select>
+                )}
                 {state?.errors?.role && <p className="text-red-500 text-sm mt-1">{state.errors.role}</p>}
             </div>
 

@@ -88,6 +88,9 @@ export async function updateUser(userId: string, prevState: ActionState, formDat
 
     const { name, email, role } = validatedFields.data;
 
+    // SUPER_ADMIN role cannot be changed through this form — preserve it.
+    const effectiveRole: Role = existingUser.role === 'SUPER_ADMIN' ? 'SUPER_ADMIN' : (role as Role);
+
     if (session.user.id === userId && existingUser.role === 'ADMIN' && role !== 'ADMIN') {
         const adminCount = await prisma.user.count({ where: { role: 'ADMIN' } });
         if (adminCount <= 1) {
@@ -101,7 +104,7 @@ export async function updateUser(userId: string, prevState: ActionState, formDat
             data: {
                 name,
                 email,
-                role: role as Role,
+                role: effectiveRole,
             },
         });
     } catch (error) {
