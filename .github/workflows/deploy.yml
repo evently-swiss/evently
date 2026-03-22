@@ -72,7 +72,7 @@ jobs:
 
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            nvm use --lts
+            nvm use 20
 
             # Install deps (prisma CLI is in devDependencies; always install full deps)
             npm ci
