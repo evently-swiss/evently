@@ -56,6 +56,7 @@ jobs:
           host: ${{ secrets.INFOMANIAK_HOST }}
           username: ${{ secrets.INFOMANIAK_USER }}
           key: ${{ secrets.INFOMANIAK_SSH_KEY }}
+          envs: GITHUB_REF
           script: |
             set -e
 
