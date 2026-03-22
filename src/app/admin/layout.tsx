@@ -1,5 +1,4 @@
-import Link from 'next/link';
-import { signOut, auth } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import { AdminNav } from '@/components/AdminNav';
 
 export default async function AdminLayout({

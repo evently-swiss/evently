@@ -186,7 +186,7 @@ function LinkForm({ mode, eventId, link, promoters, userRole, createAction, upda
 }
 
 export function LinkModal(props: LinkModalProps) {
-    const { mode, link, userRole } = props;
+    const { mode, userRole } = props;
     const [isOpen, setIsOpen] = useState(false);
     const [version, setVersion] = useState(0);
 

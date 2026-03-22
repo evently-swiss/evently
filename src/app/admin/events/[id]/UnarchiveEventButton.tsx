@@ -1,7 +1,7 @@
 'use client';
 
 export function UnarchiveEventButton({ unarchiveAction }: { unarchiveAction: () => Promise<void> }) {
-    const handleAction = async (_formData: FormData) => {
+    const handleAction = async () => {
         await unarchiveAction();
     };
 

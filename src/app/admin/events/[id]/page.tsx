@@ -1,9 +1,8 @@
 import prisma from '@/lib/prisma';
-import { LinkType, FieldMode } from '@prisma/client';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
-import { CloudDownload, Tags, User as UserIcon, Link as LinkIcon, Hand } from 'lucide-react';
+import { CloudDownload, User as UserIcon, Link as LinkIcon, Hand } from 'lucide-react';
 import { LinkModal } from '@/components/modals/LinkModal';
 import { createLink, updateLink, deleteLink, archiveEvent, unarchiveEvent } from './actions';
 import { ArchiveEventButton } from './ArchiveEventButton';

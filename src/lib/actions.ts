@@ -2,8 +2,6 @@
 
 import { signIn } from '@/lib/auth';
 import { AuthError, CredentialsSignin } from 'next-auth';
-import { redirect } from 'next/navigation';
-import { auth } from '@/lib/auth';
 
 export async function authenticate(
     prevState: string | undefined,

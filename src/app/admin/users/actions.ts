@@ -55,7 +55,7 @@ export async function createUser(prevState: ActionState, formData: FormData): Pr
     redirect('/admin/users');
 }
 
-export async function deleteUser(userId: string, formData: FormData) {
+export async function deleteUser(userId: string) {
     const session = await auth();
     if (!session || session.user.role !== 'ADMIN') {
         // return { message: 'Unauthorized' };

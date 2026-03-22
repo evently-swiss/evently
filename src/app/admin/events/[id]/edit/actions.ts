@@ -1,6 +1,5 @@
 'use server';
 
-import { EventStatus } from '@prisma/client';
 import prisma from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { redirect } from 'next/navigation';
