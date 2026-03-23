@@ -9,8 +9,10 @@ export default async function AdminLayout({
     children: React.ReactNode;
 }) {
     const session = await auth();
+    const role = (session?.user as { role?: string } | undefined)?.role;
 
-    if (session?.user?.id) {
+    // SUPER_ADMIN is exempt from the subscription gate (platform owner)
+    if (session?.user?.id && role !== 'SUPER_ADMIN') {
         const active = await hasActiveSubscription(session.user.id);
         if (!active) {
             redirect('/pricing');
