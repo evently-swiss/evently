@@ -106,6 +106,7 @@ jobs:
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             nvm install
+            command -v pm2 || npm install -g pm2
 
             # Install deps (prisma CLI is in devDependencies; always install full deps)
             npm ci
