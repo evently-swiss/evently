@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import stripe from '@/lib/stripe';
+import { getStripe } from '@/lib/stripe';
 import prisma from '@/lib/prisma';
 
 // Default featured duration: 30 days
@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
+    event = getStripe().webhooks.constructEvent(rawBody, sig, webhookSecret);
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Webhook verification failed';
     return NextResponse.json({ error: message }, { status: 400 });
@@ -68,7 +68,7 @@ async function resolveUserId(subscription: Stripe.Subscription): Promise<string 
   });
   if (existing) return existing.userId;
 
-  const sessions = await stripe.checkout.sessions.list({
+  const sessions = await getStripe().checkout.sessions.list({
     customer: customerId,
     limit: 10,
   });

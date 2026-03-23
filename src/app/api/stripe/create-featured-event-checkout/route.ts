@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import stripe from '@/lib/stripe';
+import { getStripe } from '@/lib/stripe';
 import prisma from '@/lib/prisma';
 
 export async function POST(req: NextRequest) {
@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
   const successUrl = body.successUrl ?? `${appUrl}/admin/events/${eventId}?featured=success`;
   const cancelUrl = body.cancelUrl ?? `${appUrl}/admin/events/${eventId}`;
 
-  const checkoutSession = await stripe.checkout.sessions.create({
+  const checkoutSession = await getStripe().checkout.sessions.create({
     mode: 'payment',
     customer_email: session.user.email,
     line_items: [{ price: priceId, quantity: 1 }],

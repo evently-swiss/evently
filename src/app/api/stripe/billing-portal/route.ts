@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import stripe from '@/lib/stripe';
+import { getStripe } from '@/lib/stripe';
 import prisma from '@/lib/prisma';
 
 export async function POST(req: NextRequest) {
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
   const body = req.body ? await req.json().catch(() => ({})) : {};
   const returnUrl = (body as { returnUrl?: string }).returnUrl ?? `${appUrl}/account/billing`;
 
-  const portalSession = await stripe.billingPortal.sessions.create({
+  const portalSession = await getStripe().billingPortal.sessions.create({
     customer: sub.stripeCustomerId,
     return_url: returnUrl,
   });
