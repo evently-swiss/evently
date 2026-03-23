@@ -5,6 +5,7 @@ import { notFound } from 'next/navigation';
 import { Calendar, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import LoungeReservationForm from './lounge-reservation-form';
+import { getEventLayout, getLayoutAvailability } from '@/lib/lounge-layout';
 
 function parseLoungeNumbers(rawNumbers: string[]): number[] {
   return Array.from(
@@ -81,6 +82,9 @@ export default async function LoungeReservationPage({
   const fallbackOptions = [1, 2, 3, 4, 5, 6, 7, 8];
   const loungeNumberOptions = event.loungeNumberOptions.length > 0 ? event.loungeNumberOptions : fallbackOptions;
 
+  const layout = await getEventLayout(event.id);
+  const availability = layout ? await getLayoutAvailability(layout.id, event.id) : [];
+
   return (
     <div className="min-h-screen bg-[--color-bg] text-[--color-text-primary]">
       <main className="mx-auto w-full max-w-xl px-4 py-6 md:px-6 md:py-8">
@@ -118,6 +122,8 @@ export default async function LoungeReservationPage({
             <LoungeReservationForm
               eventSlug={event.slug}
               loungeNumberOptions={loungeNumberOptions}
+              layout={layout}
+              availability={availability}
             />
 
             <p className="text-center text-xs text-[--color-text-muted]">
