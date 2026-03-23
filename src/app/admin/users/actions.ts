@@ -8,14 +8,20 @@ import { redirect } from 'next/navigation';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { ActionState } from '@/lib/definitions';
+import { sendPasswordSetupEmail } from '@/lib/password-setup-email';
+import crypto from 'crypto';
 
 
 
 const userSchema = z.object({
     name: z.string().min(1),
     email: z.string().email(),
-    password: z.string().min(6),
+    password: z.string().min(6).optional(),
     role: z.enum(['ADMIN', 'PROMOTER', 'ENTRY_STAFF']),
+    sendSetupEmail: z.boolean(),
+}).refine((data) => data.sendSetupEmail || (data.password && data.password.length >= 6), {
+    message: 'Password is required when not sending a setup email.',
+    path: ['password'],
 });
 
 const updateUserSchema = z.object({
@@ -30,11 +36,14 @@ export async function createUser(prevState: ActionState, formData: FormData): Pr
         return { message: 'Unauthorized' };
     }
 
+    const sendSetupEmail = formData.get('sendSetupEmail') === 'on';
+
     const validatedFields = userSchema.safeParse({
         name: formData.get('name') as string,
         email: formData.get('email') as string,
-        password: formData.get('password') as string,
+        password: formData.get('password') as string || undefined,
         role: formData.get('role') as string,
+        sendSetupEmail,
     });
 
     if (!validatedFields.success) {
@@ -44,15 +53,35 @@ export async function createUser(prevState: ActionState, formData: FormData): Pr
     const { name, email, password, role } = validatedFields.data;
 
     try {
-        const hashedPassword = await bcrypt.hash(password, 10);
-        await prisma.user.create({
-            data: {
-                name,
-                email,
-                passwordHash: hashedPassword,
-                role: role as Role,
-            },
-        });
+        if (sendSetupEmail) {
+            // Create user with a random unusable password and a setup token
+            const tempPassword = crypto.randomBytes(32).toString('hex');
+            const hashedPassword = await bcrypt.hash(tempPassword, 10);
+            const setupToken = crypto.randomBytes(32).toString('hex');
+
+            await prisma.user.create({
+                data: {
+                    name,
+                    email,
+                    passwordHash: hashedPassword,
+                    mustChangePassword: true,
+                    verificationToken: setupToken,
+                    role: role as Role,
+                },
+            });
+
+            await sendPasswordSetupEmail({ to: email, name, token: setupToken });
+        } else {
+            const hashedPassword = await bcrypt.hash(password!, 10);
+            await prisma.user.create({
+                data: {
+                    name,
+                    email,
+                    passwordHash: hashedPassword,
+                    role: role as Role,
+                },
+            });
+        }
     } catch (error) {
         console.error(error);
         return { message: 'Failed to create user. Email might be taken.' };

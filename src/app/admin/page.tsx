@@ -8,6 +8,9 @@ type RecentUser = {
     email: string;
     role: string;
     createdAt: Date;
+    mustChangePassword: boolean;
+    emailVerified: Date | null;
+    verificationToken: string | null;
 };
 
 type ActiveEvent = {
@@ -49,6 +52,9 @@ async function getDashboardData() {
                 email: true,
                 role: true,
                 createdAt: true,
+                mustChangePassword: true,
+                emailVerified: true,
+                verificationToken: true,
             },
         }),
         prisma.event.findMany({
@@ -158,6 +164,7 @@ export default async function AdminPage() {
                                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Email</th>
                                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Role</th>
                                     <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Created</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Status</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-800">
@@ -178,6 +185,15 @@ export default async function AdminPage() {
                                         </td>
                                         <td className="px-4 py-4 text-sm text-gray-300">
                                             {format(new Date(user.createdAt), 'dd.MM.yyyy HH:mm')}
+                                        </td>
+                                        <td className="px-4 py-4 text-sm">
+                                            {user.mustChangePassword ? (
+                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-900/60 text-yellow-300">Invite Pending</span>
+                                            ) : user.verificationToken && !user.emailVerified ? (
+                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-900/60 text-orange-300">Email Unverified</span>
+                                            ) : (
+                                                <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-900/60 text-green-300">Active</span>
+                                            )}
                                         </td>
                                     </tr>
                                 ))}

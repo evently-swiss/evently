@@ -40,14 +40,21 @@ enum RsvpStatus {
   WAITLISTED
 }
 
+enum OperatorSubscriptionStatus {
+  ACTIVE
+  TRIALING
+  CANCELED
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
   email         String    @unique
   emailVerified DateTime?
   verificationToken String? @unique
-  passwordHash  String
-  role          Role      @default(PROMOTER)
+  passwordHash       String
+  mustChangePassword Boolean   @default(false)
+  role               Role      @default(PROMOTER)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -58,6 +65,8 @@ model User {
   guests             Guest[]      @relation("PromoterGuests")
   checkIns           CheckIn[]
   doorEvents         Event[]      @relation("DoorStaffEvents")
+  operatorSubscriptions OperatorSubscription[]
+  featuredEvents     FeaturedEvent[]
 }
 
 model Event {
@@ -90,6 +99,40 @@ model Event {
   lounges            Lounge[]
   doorStaff          User[]      @relation("DoorStaffEvents")
   assignedPromoters  User[]      @relation("EventPromoters")
+  featuredEvents     FeaturedEvent[]
+}
+
+model OperatorSubscription {
+  id                   String                     @id @default(cuid())
+  userId               String
+  stripeCustomerId     String?                    @unique
+  stripeSubscriptionId String?                    @unique
+  status               OperatorSubscriptionStatus @default(TRIALING)
+  planId               String
+  periodEnd            DateTime?
+  createdAt            DateTime                   @default(now())
+  updatedAt            DateTime                   @updatedAt
+
+  user                 User                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model FeaturedEvent {
+  id                    String   @id @default(cuid())
+  eventId               String
+  userId                String
+  stripePaymentIntentId String   @unique
+  featuredUntil         DateTime
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  event                 Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([eventId])
+  @@index([userId])
+  @@index([featuredUntil])
 }
 
 model SignupLink {
