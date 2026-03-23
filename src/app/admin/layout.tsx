@@ -1,5 +1,7 @@
 import { auth } from '@/lib/auth';
 import { AdminNav } from '@/components/AdminNav';
+import { hasActiveSubscription } from '@/lib/subscription';
+import { redirect } from 'next/navigation';
 
 export default async function AdminLayout({
     children,
@@ -7,6 +9,13 @@ export default async function AdminLayout({
     children: React.ReactNode;
 }) {
     const session = await auth();
+
+    if (session?.user?.id) {
+        const active = await hasActiveSubscription(session.user.id);
+        if (!active) {
+            redirect('/pricing');
+        }
+    }
 
     return (
         <div className="min-h-screen bg-black text-white">
@@ -17,4 +26,3 @@ export default async function AdminLayout({
         </div>
     );
 }
-

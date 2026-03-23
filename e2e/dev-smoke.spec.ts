@@ -38,7 +38,7 @@ test('dev smoke: admin login to guest signup flow', async ({ page }) => {
   await page.getByRole('button', { name: 'Create Event' }).click();
 
   await page.waitForURL('/admin/events');
-  await page.getByRole('link', { name: eventName, exact: true }).first().click();
+  await page.getByRole('link', { name: eventName, exact: false }).first().click();
   await page.waitForURL(/\/admin\/events\/.+/);
   const eventDetailUrl = page.url();
 

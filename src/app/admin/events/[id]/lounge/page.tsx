@@ -2,6 +2,10 @@ import prisma from '@/lib/prisma';
 import { LoungeStatus } from '@prisma/client';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ReservationActions } from './ReservationActions';
+import { confirmReservation, cancelReservation } from './actions';
+import LoungeViewToggle from './LoungeViewToggle';
+import { getEventLayout, getLayoutAvailability } from '@/lib/lounge-layout';
 
 const statusStyles: Record<LoungeStatus, string> = {
   PENDING: 'bg-amber-950/70 text-amber-300 border border-amber-800/70',
@@ -43,6 +47,17 @@ export default async function EventLoungeReservationsPage({
       loungeReservations: {
         where: selectedStatus ? { status: selectedStatus } : undefined,
         orderBy: [{ arrivalTime: 'asc' }, { createdAt: 'desc' }],
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          phone: true,
+          arrivalTime: true,
+          numberOfGuests: true,
+          loungeNumbers: true,
+          minConsumation: true,
+          status: true,
+        },
       },
     },
   });
@@ -50,6 +65,17 @@ export default async function EventLoungeReservationsPage({
   if (!event) {
     notFound();
   }
+
+  const layout = await getEventLayout(id);
+  const availability = layout ? await getLayoutAvailability(layout.id, id) : [];
+
+  // Serialize Decimal to string for client component
+  const reservationsForMap = event.loungeReservations.map((r) => ({
+    ...r,
+    minConsumation: r.minConsumation.toFixed(2),
+  }));
+
+
 
   return (
     <div>
@@ -94,72 +120,92 @@ export default async function EventLoungeReservationsPage({
         )}
       </div>
 
-      <div className="overflow-x-auto rounded-md border border-gray-800 bg-gray-900 shadow">
-        <table className="min-w-full divide-y divide-gray-800">
-          <thead className="bg-gray-950">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
-                Name
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
-                Phone
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
-                Arrival Time
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
-                Guests
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
-                Lounge #s
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
-                Min Consumation
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
-                Status
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-800">
-            {event.loungeReservations.length === 0 ? (
+      <LoungeViewToggle
+        layout={layout}
+        availability={availability}
+        reservations={reservationsForMap}
+        eventId={event.id}
+        confirmAction={confirmReservation}
+        cancelAction={cancelReservation}
+      >
+        <div className="overflow-x-auto rounded-md border border-gray-800 bg-gray-900 shadow">
+          <table className="min-w-full divide-y divide-gray-800">
+            <thead className="bg-gray-950">
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-sm text-gray-400">
-                  No lounge reservations found.
-                </td>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  Name
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  Phone
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  Arrival Time
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  Guests
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  Lounge #s
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  Min Consumation
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  Status
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">
+                  Actions
+                </th>
               </tr>
-            ) : (
-              event.loungeReservations.map((reservation) => (
-                <tr key={reservation.id} className="hover:bg-gray-800/40">
-                  <td className="px-4 py-3 text-sm text-white">
-                    {reservation.firstName} {reservation.lastName}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-300">{reservation.phone}</td>
-                  <td className="px-4 py-3 text-sm text-gray-300">{reservation.arrivalTime}</td>
-                  <td className="px-4 py-3 text-sm text-gray-300">
-                    {reservation.numberOfGuests}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-300">
-                    {reservation.loungeNumbers.length > 0
-                      ? reservation.loungeNumbers.join(', ')
-                      : '—'}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-300">
-                    CHF {reservation.minConsumation.toFixed(2)}
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${statusStyles[reservation.status]}`}
-                    >
-                      {reservation.status}
-                    </span>
+            </thead>
+            <tbody className="divide-y divide-gray-800">
+              {event.loungeReservations.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-6 text-center text-sm text-gray-400">
+                    No lounge reservations found.
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+              ) : (
+                event.loungeReservations.map((reservation) => (
+                  <tr key={reservation.id} className="hover:bg-gray-800/40">
+                    <td className="px-4 py-3 text-sm text-white">
+                      {reservation.firstName} {reservation.lastName}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-300">{reservation.phone}</td>
+                    <td className="px-4 py-3 text-sm text-gray-300">{reservation.arrivalTime}</td>
+                    <td className="px-4 py-3 text-sm text-gray-300">
+                      {reservation.numberOfGuests}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-300">
+                      {reservation.loungeNumbers.length > 0
+                        ? reservation.loungeNumbers.join(', ')
+                        : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-300">
+                      CHF {reservation.minConsumation.toFixed(2)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${statusStyles[reservation.status]}`}
+                      >
+                        {reservation.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <ReservationActions
+                        reservationId={reservation.id}
+                        status={reservation.status}
+                        confirmAction={confirmReservation.bind(null, reservation.id, event.id)}
+                        cancelAction={cancelReservation.bind(null, reservation.id, event.id)}
+                      />
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </LoungeViewToggle>
     </div>
   );
 }

@@ -2,8 +2,9 @@ import prisma from '@/lib/prisma';
 import { Metadata } from 'next';
 import GuestList from './guest-list';
 import LoungeList from './lounge-list';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import Link from 'next/link';
+import { hasActiveSubscription } from '@/lib/subscription';
 
 
 
@@ -45,6 +46,12 @@ export default async function DoorCheckInPage({
     const { eventId } = await params;
     const { tab } = await searchParams;
     const event = await getEventData(eventId);
+
+    const active = await hasActiveSubscription(event.createdByUserId);
+    if (!active) {
+        redirect('/pricing');
+    }
+
     const selectedTab = tab === 'lounge' ? 'lounge' : 'guestlist';
 
     // Sort guests alphabetically by default for easier searching if not filtering
