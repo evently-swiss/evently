@@ -210,7 +210,7 @@ export default function LoungeLayoutEditor({
   );
 
   const handleSvgClick = useCallback(
-    (_e: React.MouseEvent<SVGSVGElement>) => {
+    () => {
       if (tool === 'select') {
         // Deselect when clicking empty canvas
         setSelectedId(null);
