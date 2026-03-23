@@ -120,6 +120,7 @@ jobs:
             export AUTH_TRUST_HOST='${{ secrets.AUTH_TRUST_HOST }}'
             export RESEND_API_KEY='${{ secrets.RESEND_API_KEY }}'
             export RESEND_FROM_EMAIL='${{ secrets.RESEND_FROM_EMAIL }}'
+            export STRIPE_SECRET_KEY='${{ secrets.STRIPE_SECRET_KEY }}'
 
             # Run migrations
             npx prisma migrate deploy
