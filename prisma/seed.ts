@@ -19,7 +19,7 @@ async function main() {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await prisma.user.upsert({
+    await prisma.user.upsert({
         where: { email },
         update: {
             passwordHash: hashedPassword,
@@ -36,26 +36,6 @@ async function main() {
     });
 
     console.log(`[seed] Super admin upserted: ${email}`);
-
-    // Ensure the super admin has an active subscription so /admin routes are accessible.
-    // SUPER_ADMIN users are gated by OperatorSubscription; without one they are redirected
-    // to /pricing — which breaks the dev smoke E2E test.
-    const existingSubscription = await prisma.operatorSubscription.findFirst({
-        where: { userId: user.id, status: { in: ['ACTIVE', 'TRIALING'] } },
-    });
-
-    if (!existingSubscription) {
-        await prisma.operatorSubscription.create({
-            data: {
-                userId: user.id,
-                status: 'TRIALING',
-                planId: 'seed',
-            },
-        });
-        console.log(`[seed] OperatorSubscription (TRIALING) created for: ${email}`);
-    } else {
-        console.log(`[seed] OperatorSubscription already exists for: ${email}`);
-    }
 
     const venues = [
         { name: 'Hive Club Zurich', slug: 'hive-club-zurich', city: 'Zurich', country: 'CH' },
