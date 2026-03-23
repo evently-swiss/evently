@@ -39,6 +39,7 @@ jobs:
           NEXTAUTH_SECRET: "ci-secret"
           NEXTAUTH_URL: "http://localhost:3000"
           AUTH_TRUST_HOST: "true"
+          STRIPE_SECRET_KEY: "sk_test_ci_placeholder"
 
   deploy:
     name: Deploy to VPS
