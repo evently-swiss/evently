@@ -1,11 +1,13 @@
 import prisma from '@/lib/prisma';
 
-/** Returns true if the given user has an active (or trialing) OperatorSubscription. */
+/** Returns true if the given user has an active (or trialing) OperatorSubscription.
+ *  SUPER_ADMIN is always considered active — they are the platform owner. */
 export async function hasActiveSubscription(userId: string): Promise<boolean> {
-  const sub = await prisma.operatorSubscription.findUnique({
-    where: { userId },
-    select: { status: true },
-  });
+  const [user, sub] = await Promise.all([
+    prisma.user.findUnique({ where: { id: userId }, select: { role: true } }),
+    prisma.operatorSubscription.findUnique({ where: { userId }, select: { status: true } }),
+  ]);
+  if (user?.role === 'SUPER_ADMIN') return true;
   return sub?.status === 'active' || sub?.status === 'trialing';
 }
 
