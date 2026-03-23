@@ -128,3 +128,44 @@ export async function checkOutGuest(guestId: string, eventId: string, count: num
     revalidatePath(`/door/${eventId}`);
     return { success: true };
 }
+
+export async function checkInLoungeReservation(
+    reservationId: string,
+    eventId: string,
+): Promise<ActionState> {
+    const session = await auth();
+    if (!session || (session.user.role !== 'ENTRY_STAFF' && session.user.role !== 'ADMIN')) {
+        return { message: 'Unauthorized', success: false };
+    }
+
+    try {
+        const reservation = await prisma.loungeReservation.findUnique({
+            where: { id: reservationId },
+            select: { id: true, eventId: true, status: true },
+        });
+
+        if (!reservation || reservation.eventId !== eventId) {
+            return { message: 'Reservation not found', success: false };
+        }
+
+        if (reservation.status !== 'CONFIRMED' && reservation.status !== 'ARRIVED') {
+            return { message: 'Only confirmed reservations can be checked in', success: false };
+        }
+
+        if (reservation.status === 'ARRIVED') {
+            return { success: true, message: 'Reservation already checked in' };
+        }
+
+        await prisma.loungeReservation.update({
+            where: { id: reservationId },
+            data: { status: 'ARRIVED' },
+        });
+    } catch (error) {
+        console.error(error);
+        return { message: 'Failed to check in lounge reservation.', success: false };
+    }
+
+    revalidatePath(`/door/${eventId}`);
+    revalidatePath(`/admin/events/${eventId}/lounge`);
+    return { success: true };
+}
