@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback, useTransition } from 'react';
-import { Square, Circle, MousePointer, Trash2, Save, Plus, Loader2 } from 'lucide-react';
+import { Square, Circle, MousePointer, Trash2, Save, Loader2 } from 'lucide-react';
 import { createLayout, saveLayout, LoungeBoxInput } from './actions';
 
 const CANVAS_W = 1200;
@@ -210,7 +210,7 @@ export default function LoungeLayoutEditor({
   );
 
   const handleSvgClick = useCallback(
-    (e: React.MouseEvent<SVGSVGElement>) => {
+    (_e: React.MouseEvent<SVGSVGElement>) => {
       if (tool === 'select') {
         // Deselect when clicking empty canvas
         setSelectedId(null);

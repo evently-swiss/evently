@@ -74,6 +74,7 @@ export default async function ScrapedEventsPage({ searchParams }: PageProps) {
               className="rounded-lg border border-gray-800 bg-gray-900 p-4 flex flex-col sm:flex-row sm:items-start gap-4"
             >
               {scraped.imageUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={scraped.imageUrl}
                   alt={scraped.title}

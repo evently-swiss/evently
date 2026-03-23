@@ -74,7 +74,7 @@ async function migrateEvents(systemUserId: string): Promise<Map<string, string>>
   const mongoIdToEventId = new Map<string, string>();
   const records = readJson('nightpilot_events.json') as Record<string, unknown>[];
   let created = 0;
-  let skipped = 0;
+  const skipped = 0;
 
   console.log(`\nMigrating ${records.length} events…`);
 
@@ -85,7 +85,6 @@ async function migrateEvents(systemUserId: string): Promise<Map<string, string>>
     const date = rawDate ? new Date(String(rawDate)) : new Date();
     const venueSlug = rec.venueSlug ?? rec.venue_slug ?? rec.venue;
     const djNames = Array.isArray(rec.djNames) ? (rec.djNames as string[]) : [];
-    const tags = Array.isArray(rec.tags) ? (rec.tags as string[]) : [];
 
     // Try to find linked venue
     let venueId: string | undefined;

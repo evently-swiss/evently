@@ -1,6 +1,5 @@
 import prisma from '@/lib/prisma';
 import { format } from 'date-fns';
-import Link from 'next/link';
 
 export const revalidate = 60; // ISR: revalidate every 60 seconds
 
@@ -106,6 +105,7 @@ function EventCard({ event, featured }: EventCardProps) {
       }`}
     >
       {image && (
+        // eslint-disable-next-line @next/next/no-img-element
         <img
           src={image}
           alt={event.name}
