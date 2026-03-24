@@ -26,6 +26,12 @@ This project uses [`next/font`](https://nextjs.org/docs/app/building-your-applic
 - Run tests in watch mode: `npm run test:watch`
 - Test setup and Prisma testing patterns: [`docs/testing.md`](docs/testing.md)
 
+## Branching Policy
+
+- Open all pull requests against `dev`.
+- Do not open pull requests against `main`.
+- `main` is production-only and updated through CTO-approved release promotion.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

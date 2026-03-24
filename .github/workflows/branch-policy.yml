@@ -1,0 +1,17 @@
+name: Branch Policy
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  reject-main-prs:
+    name: Enforce dev-first PR policy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reject PRs targeting main
+        run: |
+          echo "PRs to main are blocked by policy."
+          echo "Open PRs against dev. CTO-approved releases are promoted to main separately."
+          exit 1
