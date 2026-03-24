@@ -17,6 +17,21 @@ jobs:
     name: Build & Lint
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -24,12 +39,18 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: package-lock.json
 
       - name: Install dependencies
         run: npm ci
+
+      - name: Run database migrations
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: "postgresql://ci:ci@localhost:5432/ci"
+          DIRECT_URL: "postgresql://ci:ci@localhost:5432/ci"
 
       - name: Lint
         run: npm run lint
@@ -42,6 +63,7 @@ jobs:
           NEXTAUTH_SECRET: "ci-secret"
           NEXTAUTH_URL: "http://localhost:3000"
           AUTH_TRUST_HOST: "true"
+          STRIPE_SECRET_KEY: "sk_test_ci_placeholder"
 
   deploy:
     name: Deploy to VPS
@@ -59,7 +81,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: package-lock.json
 
@@ -86,7 +108,8 @@ jobs:
 
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            nvm use 20
+            nvm install
+            command -v pm2 || npm install -g pm2
 
             # Install deps (prisma CLI is in devDependencies; always install full deps)
             npm ci
@@ -101,6 +124,7 @@ jobs:
             export AUTH_TRUST_HOST='${{ secrets.AUTH_TRUST_HOST }}'
             export RESEND_API_KEY='${{ secrets.RESEND_API_KEY }}'
             export RESEND_FROM_EMAIL='${{ secrets.RESEND_FROM_EMAIL }}'
+            export STRIPE_SECRET_KEY='${{ secrets.STRIPE_SECRET_KEY }}'
 
             # Run migrations
             npx prisma migrate deploy

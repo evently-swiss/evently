@@ -46,6 +46,30 @@ enum OperatorSubscriptionStatus {
   CANCELED
 }
 
+enum EventSource {
+  INTERNAL
+  SCRAPED
+}
+
+enum ScrapedSyncStatus {
+  NEW
+  RECONCILED
+  DUPLICATE
+  FAILED
+}
+
+enum LoungeStatus {
+  PENDING
+  CONFIRMED
+  ARRIVED
+  CANCELLED
+}
+
+enum PromoterVenueRole {
+  RESIDENT
+  GUEST
+}
+
 model User {
   id            String    @id @default(cuid())
   name          String?
@@ -65,20 +89,32 @@ model User {
   guests             Guest[]      @relation("PromoterGuests")
   checkIns           CheckIn[]
   doorEvents         Event[]      @relation("DoorStaffEvents")
-  operatorSubscriptions OperatorSubscription[]
-  featuredEvents     FeaturedEvent[]
+  passwordResetTokens PasswordResetToken[]
+  promoterVenues        PromoterVenue[]
+  operatorSubscription  OperatorSubscription?
+  featuredEventPayments FeaturedEvent[]       @relation("FeaturedEventPayments")
 }
 
 model Event {
   id            String      @id @default(cuid())
   name          String
   slug          String      @unique
+  venueId       String?
+  source        EventSource @default(INTERNAL)
+  scrapedEventId String?    @unique
+  scrapedEvent  ScrapedEvent? @relation(fields: [scrapedEventId], references: [externalUid], onDelete: SetNull)
+  featuredEvent FeaturedEvent?
   date          DateTime
   startTime     String?     // e.g. "22:00"
   endTime       String?     // e.g. "04:00"
   venueName     String?
   address       String?
   description   String?
+  djNames       String[]    @default([])
+  genre         String?
+  label         String?
+  flyerImage    String?
+  titleImage    String?
   status        EventStatus @default(DRAFT)
   capacity      Int?        // Overall max guests
 
@@ -87,6 +123,10 @@ model Event {
   heroImageUrl  String?
   accentColor   String?     // e.g. "#FF0000"
 
+  // Lounge layout override (optional; falls back to venue active layout)
+  loungeLayoutId String?
+  loungeLayout   LoungeLayout? @relation(fields: [loungeLayoutId], references: [id], onDelete: SetNull)
+
   createdByUserId String
   createdBy       User      @relation("CreatedEvents", fields: [createdByUserId], references: [id])
 
@@ -94,9 +134,11 @@ model Event {
   updatedAt     DateTime    @updatedAt
 
   // Relations
+  venue              Venue?      @relation(fields: [venueId], references: [id], onDelete: SetNull)
   signupLinks        SignupLink[]
   guests             Guest[]
   lounges            Lounge[]
+  loungeReservations LoungeReservation[]
   doorStaff          User[]      @relation("DoorStaffEvents")
   assignedPromoters  User[]      @relation("EventPromoters")
   featuredEvents     FeaturedEvent[]
@@ -133,6 +175,64 @@ model FeaturedEvent {
   @@index([eventId])
   @@index([userId])
   @@index([featuredUntil])
+}
+
+model ScrapedEvent {
+  id          String            @id @default(cuid())
+  externalUid String            @unique
+  venueSlug   String
+  title       String
+  date        DateTime
+  startTime   String?
+  endTime     String?
+  eventUrl    String?
+  imageUrl    String?
+  cost        String?
+  tags        String[]          @default([])
+  syncStatus  ScrapedSyncStatus @default(NEW)
+  scrapedAt   DateTime          @default(now())
+  checkedAt   DateTime?
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  // Relations
+  event Event?
+}
+
+model Venue {
+  id             String   @id @default(cuid())
+  name           String
+  slug           String   @unique
+  address        String?
+  city           String?
+  country        String   @default("CH")
+  contactEmail   String?
+  contactPhone   String?
+  loungeEnabled  Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  events              Event[]
+  loungeReservations  LoungeReservation[]
+  promoters           PromoterVenue[]
+  loungeLayouts       LoungeLayout[]
+}
+
+model PromoterVenue {
+  id        String            @id @default(cuid())
+  userId    String
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  venueId   String
+  venue     Venue             @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  role      PromoterVenueRole @default(GUEST)
+  since     DateTime          @default(now())
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  @@unique([userId, venueId])
+  @@index([userId])
+  @@index([venueId])
 }
 
 model SignupLink {
@@ -208,6 +308,61 @@ model Lounge {
   guest           Guest?   @relation(fields: [guestId], references: [id], onDelete: SetNull)
 }
 
+model LoungeReservation {
+  id              String       @id @default(cuid())
+  eventId         String
+  event           Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  venueId         String
+  venue           Venue        @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  firstName       String
+  lastName        String
+  phone           String
+  arrivalTime     String
+  numberOfGuests  Int
+  loungeNumbers   Int[]
+  minConsumation  Decimal      @db.Decimal(10, 2)
+  comments        String?
+  status          LoungeStatus @default(PENDING)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+
+model LoungeLayout {
+  id        String       @id @default(cuid())
+  venueId   String
+  venue     Venue        @relation(fields: [venueId], references: [id], onDelete: Cascade)
+  name      String       @default("Main Floor")
+  width     Int          @default(1200)
+  height    Int          @default(800)
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  boxes     LoungeBox[]
+  events    Event[]
+
+  @@index([venueId])
+}
+
+model LoungeBox {
+  id             String        @id @default(cuid())
+  layoutId       String
+  layout         LoungeLayout  @relation(fields: [layoutId], references: [id], onDelete: Cascade)
+  label          String
+  number         Int
+  x              Float
+  y              Float
+  width          Float
+  height         Float
+  shape          String        @default("rect")
+  color          String?
+  capacity       Int?
+  minConsumation Decimal?      @db.Decimal(10, 2)
+  isActive       Boolean       @default(true)
+
+  @@index([layoutId])
+}
 model CheckIn {
   id                String   @id @default(cuid())
   guestId           String   @unique
@@ -220,4 +375,49 @@ model CheckIn {
   checkedInCount    Int      @default(1)
   checkedOutAt      DateTime?
   checkedOutCount   Int?
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model OperatorSubscription {
+  id                   String    @id @default(cuid())
+  userId               String    @unique
+  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stripeCustomerId     String    @unique
+  stripeSubscriptionId String    @unique
+  stripePriceId        String
+  status               String    // e.g. "active", "trialing", "past_due", "canceled"
+  currentPeriodEnd     DateTime
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([stripeCustomerId])
+  @@index([stripeSubscriptionId])
+}
+
+model FeaturedEvent {
+  id                      String    @id @default(cuid())
+  eventId                 String    @unique
+  event                   Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  stripePaymentIntentId   String    @unique
+  paidByUserId            String
+  paidBy                  User      @relation("FeaturedEventPayments", fields: [paidByUserId], references: [id])
+  expiresAt               DateTime
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  @@index([eventId])
+  @@index([expiresAt])
 }

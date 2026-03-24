@@ -1,4 +1,6 @@
 import type { CSSProperties } from 'react';
+import { redirect } from 'next/navigation';
+import { hasActiveSubscription } from '@/lib/subscription';
 import prisma from '@/lib/prisma';
 import { Metadata } from 'next';
 import SignupForm from '@/components/SignupForm';
@@ -62,6 +64,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const result = await getLink(slug);
 
+  if (result.status === 'SUCCESS') {
+    const active = await hasActiveSubscription(result.link.event.createdByUserId);
+    if (!active) {
+      redirect('/pricing');
+    }
+  }
+
   if (result.status !== 'SUCCESS') {
     return { title: 'Invalid Link' };
   }
@@ -83,6 +92,13 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 export default async function SignupPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const result = await getLink(slug);
+
+  if (result.status === 'SUCCESS') {
+    const active = await hasActiveSubscription(result.link.event.createdByUserId);
+    if (!active) {
+      redirect('/pricing');
+    }
+  }
 
   if (result.status !== 'SUCCESS') {
     let title = 'Invalid Link';

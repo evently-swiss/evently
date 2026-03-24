@@ -1,7 +1,11 @@
 import prisma from '@/lib/prisma';
 import { Metadata } from 'next';
 import GuestList from './guest-list';
-import { notFound } from 'next/navigation';
+import LoungeList from './lounge-list';
+import QrScanner from './qr-scanner';
+import { notFound, redirect } from 'next/navigation';
+import Link from 'next/link';
+import { hasActiveSubscription } from '@/lib/subscription';
 
 
 
@@ -14,6 +18,10 @@ async function getEventData(id: string) {
                     checkIn: true,
                 },
                 orderBy: { createdAt: 'desc' }, // Or alphabetical?
+            },
+            loungeReservations: {
+                where: { status: { in: ['CONFIRMED', 'ARRIVED'] } },
+                orderBy: [{ arrivalTime: 'asc' }, { createdAt: 'desc' }],
             },
         },
     });
@@ -29,9 +37,23 @@ export async function generateMetadata({ params }: { params: Promise<{ eventId: 
     };
 }
 
-export default async function DoorCheckInPage({ params }: { params: Promise<{ eventId: string }> }) {
+export default async function DoorCheckInPage({
+    params,
+    searchParams,
+}: {
+    params: Promise<{ eventId: string }>;
+    searchParams: Promise<{ tab?: string }>;
+}) {
     const { eventId } = await params;
+    const { tab } = await searchParams;
     const event = await getEventData(eventId);
+
+    const active = await hasActiveSubscription(event.createdByUserId);
+    if (!active) {
+        redirect('/pricing');
+    }
+
+    const selectedTab = tab === 'lounge' ? 'lounge' : tab === 'scan' ? 'scan' : 'guestlist';
 
     // Sort guests alphabetically by default for easier searching if not filtering
     const sortedGuests = event.guests.sort((a, b) =>
@@ -46,7 +68,40 @@ export default async function DoorCheckInPage({ params }: { params: Promise<{ ev
                     {event.guests.length + event.guests.reduce((acc, g) => acc + g.plusOnesCount, 0)} Guests • {event.guests.filter(g => g.checkIn && !g.checkIn.checkedOutAt).length + event.guests.filter(g => g.checkIn && !g.checkIn.checkedOutAt).reduce((acc, g) => acc + g.plusOnesCount, 0)} Checked In
                 </p>
             </div>
-            <GuestList guests={sortedGuests} eventId={event.id} />
+            <div className="mb-4 rounded-xl border border-gray-800 bg-gray-900 p-1 grid grid-cols-3 gap-1">
+                <Link
+                    href={`/door/${event.id}`}
+                    className={`rounded-lg px-3 py-2 text-center text-sm font-medium ${
+                        selectedTab === 'guestlist' ? 'bg-indigo-600 text-white' : 'text-gray-300'
+                    }`}
+                >
+                    Guest List
+                </Link>
+                <Link
+                    href={`/door/${event.id}?tab=lounge`}
+                    className={`rounded-lg px-3 py-2 text-center text-sm font-medium ${
+                        selectedTab === 'lounge' ? 'bg-indigo-600 text-white' : 'text-gray-300'
+                    }`}
+                >
+                    Lounge
+                </Link>
+                <Link
+                    href={`/door/${event.id}?tab=scan`}
+                    className={`rounded-lg px-3 py-2 text-center text-sm font-medium ${
+                        selectedTab === 'scan' ? 'bg-indigo-600 text-white' : 'text-gray-300'
+                    }`}
+                >
+                    Scan QR
+                </Link>
+            </div>
+
+            {selectedTab === 'guestlist' ? (
+                <GuestList guests={sortedGuests} eventId={event.id} />
+            ) : selectedTab === 'lounge' ? (
+                <LoungeList eventId={event.id} reservations={event.loungeReservations} />
+            ) : (
+                <QrScanner eventId={event.id} />
+            )}
         </div>
     );
 }
