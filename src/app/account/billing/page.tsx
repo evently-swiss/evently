@@ -10,7 +10,7 @@ async function openBillingPortal() {
   if (!session?.user?.id) return;
 
   const prismaModule = await import('@/lib/prisma');
-  const sub = await prismaModule.default.operatorSubscription.findUnique({
+  const sub = await prismaModule.default.operatorSubscription.findFirst({
     where: { userId: session.user.id },
     select: { stripeCustomerId: true },
   });
@@ -20,7 +20,7 @@ async function openBillingPortal() {
   const { getStripe } = await import('@/lib/stripe');
 
   const portalSession = await getStripe().billingPortal.sessions.create({
-    customer: sub.stripeCustomerId,
+    customer: sub.stripeCustomerId!,
     return_url: `${appUrl}/account/billing`,
   });
 
@@ -31,7 +31,7 @@ export default async function BillingPage() {
   const session = await auth();
   if (!session?.user?.id) redirect('/login');
 
-  const sub = await prisma.operatorSubscription.findUnique({
+  const sub = await prisma.operatorSubscription.findFirst({
     where: { userId: session.user.id },
   });
 
@@ -50,7 +50,7 @@ export default async function BillingPage() {
               <span className="text-sm text-gray-400">Status</span>
               <span
                 className={`text-sm font-semibold ${
-                  sub.status === 'active' || sub.status === 'trialing'
+                  sub.status === 'ACTIVE' || sub.status === 'TRIALING'
                     ? 'text-emerald-400'
                     : 'text-rose-400'
                 }`}
@@ -61,7 +61,7 @@ export default async function BillingPage() {
             <div className="flex items-center justify-between">
               <span className="text-sm text-gray-400">Renews</span>
               <span className="text-sm text-white">
-                {format(sub.currentPeriodEnd, 'PPP')}
+                {sub.periodEnd ? format(sub.periodEnd, 'PPP') : '—'}
               </span>
             </div>
             <div className="pt-4 border-t border-gray-800">

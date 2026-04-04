@@ -5,10 +5,13 @@ import prisma from '@/lib/prisma';
 export async function hasActiveSubscription(userId: string): Promise<boolean> {
   const [user, sub] = await Promise.all([
     prisma.user.findUnique({ where: { id: userId }, select: { role: true } }),
-    prisma.operatorSubscription.findUnique({ where: { userId }, select: { status: true } }),
+    prisma.operatorSubscription.findFirst({
+      where: { userId, status: { in: ['ACTIVE', 'TRIALING'] } },
+      select: { status: true },
+    }),
   ]);
   if (user?.role === 'SUPER_ADMIN') return true;
-  return sub?.status === 'active' || sub?.status === 'trialing';
+  return sub !== null;
 }
 
 /**

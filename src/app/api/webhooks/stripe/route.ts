@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import stripe from "@/lib/stripe";
+import { getStripe } from "@/lib/stripe";
 import prisma from "@/lib/prisma";
 
 // Duration (in days) granted per featured-event purchase type.
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
 
   let event: Stripe.Event;
   try {
-    event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+    event = getStripe().webhooks.constructEvent(body, signature, webhookSecret);
   } catch (err) {
     console.error("Webhook signature verification failed:", err);
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
           });
         } else {
           // Resolve userId by looking up the Stripe customer's email.
-          const customer = await stripe.customers.retrieve(customerId);
+          const customer = await getStripe().customers.retrieve(customerId);
           const email =
             !customer.deleted && "email" in customer ? customer.email : null;
           if (!email) {

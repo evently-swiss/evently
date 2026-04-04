@@ -100,9 +100,9 @@ async function startCheckout() {
 
   const checkoutSession = await getStripe().checkout.sessions.create({
     mode: 'subscription',
-    customer_email: session.user.email,
+    customer_email: session!.user!.email!,
     line_items: [{ price: priceId, quantity: 1 }],
-    metadata: { userId: session.user.id },
+    metadata: { userId: session!.user!.id! },
     success_url: `${appUrl}/admin`,
     cancel_url: `${appUrl}/pricing`,
   });

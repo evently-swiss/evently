@@ -83,16 +83,16 @@ model User {
   updatedAt     DateTime  @updatedAt
 
   // Relations
-  eventsCreated      Event[]      @relation("CreatedEvents")
-  assignedEvents     Event[]      @relation("EventPromoters")
-  assignedSignupLinks SignupLink[] @relation("AssignedPromoters")
-  guests             Guest[]      @relation("PromoterGuests")
-  checkIns           CheckIn[]
-  doorEvents         Event[]      @relation("DoorStaffEvents")
-  passwordResetTokens PasswordResetToken[]
+  eventsCreated         Event[]                @relation("CreatedEvents")
+  assignedEvents        Event[]                @relation("EventPromoters")
+  assignedSignupLinks   SignupLink[]           @relation("AssignedPromoters")
+  guests                Guest[]                @relation("PromoterGuests")
+  checkIns              CheckIn[]
+  doorEvents            Event[]                @relation("DoorStaffEvents")
+  passwordResetTokens   PasswordResetToken[]
   promoterVenues        PromoterVenue[]
-  operatorSubscription  OperatorSubscription?
-  featuredEventPayments FeaturedEvent[]       @relation("FeaturedEventPayments")
+  operatorSubscriptions OperatorSubscription[]
+  featuredEvents        FeaturedEvent[]
 }
 
 model Event {
@@ -103,7 +103,6 @@ model Event {
   source        EventSource @default(INTERNAL)
   scrapedEventId String?    @unique
   scrapedEvent  ScrapedEvent? @relation(fields: [scrapedEventId], references: [externalUid], onDelete: SetNull)
-  featuredEvent FeaturedEvent?
   date          DateTime
   startTime     String?     // e.g. "22:00"
   endTime       String?     // e.g. "04:00"
@@ -239,14 +238,14 @@ model SignupLink {
   id                   String    @id @default(cuid())
   eventId              String
   event                Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  
+
   // Many-to-many: Links can be assigned to multiple promoters
   assignedPromoters    User[]    @relation("AssignedPromoters")
 
   type                 LinkType  @default(GENERAL)
   slug                 String    @unique
   title                String?   // Internal label
-  
+
   maxTotalGuests       Int?
   maxPlusOnesPerSignup Int       @default(3)
   singleUse            Boolean   @default(false)
@@ -268,7 +267,7 @@ model Guest {
   id             String      @id @default(cuid())
   eventId        String
   event          Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  
+
   signupLinkId   String?
   signupLink     SignupLink? @relation(fields: [signupLinkId], references: [id], onDelete: SetNull)
 
@@ -387,37 +386,5 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
 
   @@index([userId])
-  @@index([expiresAt])
-}
-
-model OperatorSubscription {
-  id                   String    @id @default(cuid())
-  userId               String    @unique
-  user                 User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  stripeCustomerId     String    @unique
-  stripeSubscriptionId String    @unique
-  stripePriceId        String
-  status               String    // e.g. "active", "trialing", "past_due", "canceled"
-  currentPeriodEnd     DateTime
-  createdAt            DateTime  @default(now())
-  updatedAt            DateTime  @updatedAt
-
-  @@index([userId])
-  @@index([stripeCustomerId])
-  @@index([stripeSubscriptionId])
-}
-
-model FeaturedEvent {
-  id                      String    @id @default(cuid())
-  eventId                 String    @unique
-  event                   Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
-  stripePaymentIntentId   String    @unique
-  paidByUserId            String
-  paidBy                  User      @relation("FeaturedEventPayments", fields: [paidByUserId], references: [id])
-  expiresAt               DateTime
-  createdAt               DateTime  @default(now())
-  updatedAt               DateTime  @updatedAt
-
-  @@index([eventId])
   @@index([expiresAt])
 }
