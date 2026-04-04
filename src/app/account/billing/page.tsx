@@ -5,19 +5,26 @@ import { format } from 'date-fns';
 
 async function openBillingPortal() {
   'use server';
+  const { redirect: serverRedirect } = await import('next/navigation');
   const session = await (await import('@/lib/auth')).auth();
   if (!session?.user?.id) return;
 
-  const res = await fetch(`${process.env.APP_URL}/api/stripe/billing-portal`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ returnUrl: `${process.env.APP_URL}/account/billing` }),
+  const prismaModule = await import('@/lib/prisma');
+  const sub = await prismaModule.default.operatorSubscription.findUnique({
+    where: { userId: session.user.id },
+    select: { stripeCustomerId: true },
   });
-  const data = (await res.json()) as { url?: string };
-  if (data.url) {
-    const { redirect: serverRedirect } = await import('next/navigation');
-    serverRedirect(data.url);
-  }
+  if (!sub) return;
+
+  const appUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
+  const { getStripe } = await import('@/lib/stripe');
+
+  const portalSession = await getStripe().billingPortal.sessions.create({
+    customer: sub.stripeCustomerId,
+    return_url: `${appUrl}/account/billing`,
+  });
+
+  if (portalSession.url) serverRedirect(portalSession.url);
 }
 
 export default async function BillingPage() {

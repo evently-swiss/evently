@@ -82,6 +82,33 @@ const featuredAddOns: AddOn[] = [
     checkoutLabel: "Buy 5-Credit Pack",
   },
 ];
+import { auth } from '@/lib/auth';
+
+async function startCheckout() {
+  'use server';
+  const { redirect } = await import('next/navigation');
+  const session = await auth();
+  if (!session?.user?.id || !session.user.email) {
+    redirect('/login');
+  }
+
+  const priceId = process.env.STRIPE_OPERATOR_PRICE_ID;
+  if (!priceId) throw new Error('Stripe price not configured');
+
+  const appUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
+  const { getStripe } = await import('@/lib/stripe');
+
+  const checkoutSession = await getStripe().checkout.sessions.create({
+    mode: 'subscription',
+    customer_email: session.user.email,
+    line_items: [{ price: priceId, quantity: 1 }],
+    metadata: { userId: session.user.id },
+    success_url: `${appUrl}/admin`,
+    cancel_url: `${appUrl}/pricing`,
+  });
+
+  if (checkoutSession.url) redirect(checkoutSession.url);
+}
 
 export const metadata: Metadata = {
   title: "Pricing",

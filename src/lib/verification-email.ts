@@ -9,7 +9,10 @@ type VerificationEmailResult = {
 };
 
 function buildVerificationLink(token: string): string {
-  const appUrl = process.env.APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  if (process.env.NODE_ENV === 'production' && appUrl.includes('localhost')) {
+    console.warn('[verification-email] NEXTAUTH_URL appears to be localhost in production — email links will not work for external users.');
+  }
   return `${appUrl.replace(/\/$/, '')}/auth/verify?token=${encodeURIComponent(token)}`;
 }
 

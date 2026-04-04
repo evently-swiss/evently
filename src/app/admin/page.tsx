@@ -1,6 +1,6 @@
 import prisma from '@/lib/prisma';
 import Link from 'next/link';
-import { format } from 'date-fns';
+import { format, startOfMonth } from 'date-fns';
 
 type RecentUser = {
     id: string;
@@ -22,17 +22,29 @@ type ActiveEvent = {
     checkedInGuests: number;
 };
 
+type TopPromoter = {
+    id: string;
+    name: string | null;
+    guestCount: number;
+    checkedInCount: number;
+};
+
 async function getDashboardData() {
-    const startOfToday = new Date();
+    const now = new Date();
+    const startOfToday = new Date(now);
     startOfToday.setHours(0, 0, 0, 0);
+    const startOfThisMonth = startOfMonth(now);
 
     const [
         totalUsers,
         totalEvents,
         guestTotals,
+        guestsThisMonth,
         checkInsToday,
+        totalCheckIns,
         recentUsers,
         publishedEvents,
+        promoterGuests,
     ] = await Promise.all([
         prisma.user.count(),
         prisma.event.count(),
@@ -40,9 +52,13 @@ async function getDashboardData() {
             _count: { _all: true },
             _sum: { plusOnesCount: true },
         }),
+        prisma.guest.count({
+            where: { createdAt: { gte: startOfThisMonth } },
+        }),
         prisma.checkIn.count({
             where: { checkedInAt: { gte: startOfToday } },
         }),
+        prisma.checkIn.count(),
         prisma.user.findMany({
             orderBy: { createdAt: 'desc' },
             take: 10,
@@ -74,10 +90,21 @@ async function getDashboardData() {
                 },
             },
         }),
+        // Top promoters: guests grouped by promoterId
+        prisma.guest.groupBy({
+            by: ['promoterId'],
+            where: { promoterId: { not: null } },
+            _count: { _all: true },
+            orderBy: { _count: { promoterId: 'desc' } },
+            take: 5,
+        }),
     ]);
 
     const totalGuests =
         guestTotals._count._all + (guestTotals._sum.plusOnesCount ?? 0);
+
+    const overallAttendanceRate =
+        totalGuests > 0 ? Math.round((totalCheckIns / totalGuests) * 100) : 0;
 
     const activeEvents: ActiveEvent[] = publishedEvents.map((event) => {
         const plusOnes = event.guests.reduce((sum, guest) => sum + guest.plusOnesCount, 0);
@@ -95,15 +122,58 @@ async function getDashboardData() {
         };
     });
 
+    // Resolve promoter names
+    const promoterIds = promoterGuests
+        .map((g) => g.promoterId)
+        .filter((id): id is string => id !== null);
+
+    const promoterUsers = promoterIds.length > 0
+        ? await prisma.user.findMany({
+              where: { id: { in: promoterIds } },
+              select: { id: true, name: true },
+          })
+        : [];
+
+    // Fetch checked-in counts for top promoters
+    const promoterCheckInCounts = promoterIds.length > 0
+        ? await prisma.guest.findMany({
+              where: {
+                  promoterId: { in: promoterIds },
+                  checkIn: { isNot: null },
+              },
+              select: { promoterId: true },
+          })
+        : [];
+
+    const checkInByPromoter: Record<string, number> = {};
+    for (const g of promoterCheckInCounts) {
+        if (g.promoterId) {
+            checkInByPromoter[g.promoterId] = (checkInByPromoter[g.promoterId] ?? 0) + 1;
+        }
+    }
+
+    const topPromoters: TopPromoter[] = promoterGuests.map((pg) => {
+        const user = promoterUsers.find((u) => u.id === pg.promoterId);
+        return {
+            id: pg.promoterId!,
+            name: user?.name ?? null,
+            guestCount: pg._count._all,
+            checkedInCount: checkInByPromoter[pg.promoterId!] ?? 0,
+        };
+    });
+
     return {
         stats: {
             totalUsers,
             totalEvents,
             totalGuests,
             checkInsToday,
+            guestsThisMonth,
+            overallAttendanceRate,
         },
         recentUsers: recentUsers as RecentUser[],
         activeEvents,
+        topPromoters,
     };
 }
 
@@ -121,7 +191,7 @@ function roleBadgeClasses(role: string) {
 }
 
 export default async function AdminPage() {
-    const { stats, recentUsers, activeEvents } = await getDashboardData();
+    const { stats, recentUsers, activeEvents, topPromoters } = await getDashboardData();
 
     return (
         <div className="space-y-8">
@@ -148,6 +218,14 @@ export default async function AdminPage() {
                 <div className="rounded-lg border border-indigo-900/60 bg-gray-900 p-5">
                     <p className="text-xs uppercase tracking-wide text-indigo-300">Check-ins Today</p>
                     <p className="mt-3 text-3xl font-semibold">{stats.checkInsToday}</p>
+                </div>
+                <div className="rounded-lg border border-indigo-900/60 bg-gray-900 p-5">
+                    <p className="text-xs uppercase tracking-wide text-indigo-300">Guests This Month</p>
+                    <p className="mt-3 text-3xl font-semibold">{stats.guestsThisMonth}</p>
+                </div>
+                <div className="rounded-lg border border-indigo-900/60 bg-gray-900 p-5">
+                    <p className="text-xs uppercase tracking-wide text-indigo-300">Overall Attendance Rate</p>
+                    <p className="mt-3 text-3xl font-semibold text-indigo-400">{stats.overallAttendanceRate}%</p>
                 </div>
             </div>
 
@@ -226,6 +304,42 @@ export default async function AdminPage() {
                     </ul>
                 </section>
             </div>
+
+            {topPromoters.length > 0 && (
+                <section className="rounded-lg border border-gray-800 bg-gray-900 overflow-hidden">
+                    <div className="border-b border-gray-800 px-4 py-3 sm:px-6">
+                        <h2 className="text-lg font-semibold">Top Promoters</h2>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-800">
+                            <thead className="bg-gray-950">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-400">Promoter</th>
+                                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Guests Brought</th>
+                                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Checked In</th>
+                                    <th className="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-400">Conversion</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-800">
+                                {topPromoters.map((p) => (
+                                    <tr key={p.id} className="hover:bg-gray-800/40">
+                                        <td className="px-4 py-3 text-sm font-medium text-white">
+                                            {p.name || 'Unnamed'}
+                                        </td>
+                                        <td className="px-4 py-3 text-sm text-gray-200 text-right">{p.guestCount}</td>
+                                        <td className="px-4 py-3 text-sm text-green-400 text-right">{p.checkedInCount}</td>
+                                        <td className="px-4 py-3 text-sm text-indigo-400 text-right font-medium">
+                                            {p.guestCount > 0
+                                                ? Math.round((p.checkedInCount / p.guestCount) * 100)
+                                                : 0}%
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            )}
         </div>
     );
 }
