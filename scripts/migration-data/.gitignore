@@ -1,0 +1,4 @@
+# Migration exports contain PII — never commit
+*.json
+*.jsonl
+*.csv

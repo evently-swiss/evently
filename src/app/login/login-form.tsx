@@ -1,13 +1,15 @@
 'use client';
 
+import Link from 'next/link';
 import { useActionState } from 'react';
 import { authenticate } from '@/lib/actions';
 
 type LoginFormProps = {
   emailVerified: boolean;
+  passwordReset: boolean;
 };
 
-export default function LoginForm({ emailVerified }: LoginFormProps) {
+export default function LoginForm({ emailVerified, passwordReset }: LoginFormProps) {
   const [errorMessage, dispatch, isPending] = useActionState(authenticate, undefined);
 
   return (
@@ -19,6 +21,11 @@ export default function LoginForm({ emailVerified }: LoginFormProps) {
         {emailVerified && (
           <div className="rounded-md border border-emerald-700 bg-emerald-950/60 px-4 py-3 text-sm text-emerald-200">
             Email verified - you can now log in.
+          </div>
+        )}
+        {passwordReset && (
+          <div className="rounded-md border border-emerald-700 bg-emerald-950/60 px-4 py-3 text-sm text-emerald-200">
+            Password updated. You can now sign in with your new password.
           </div>
         )}
         <form action={dispatch} className="mt-8 space-y-6">
@@ -54,6 +61,11 @@ export default function LoginForm({ emailVerified }: LoginFormProps) {
           </div>
 
           <div>
+            <div className="mb-3 text-right">
+              <Link href="/forgot-password" className="text-sm text-indigo-400 hover:text-indigo-300">
+                Forgot your password?
+              </Link>
+            </div>
             <button
               type="submit"
               aria-disabled={isPending}

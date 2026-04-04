@@ -36,6 +36,23 @@ async function main() {
     });
 
     console.log(`[seed] Super admin upserted: ${email}`);
+
+    const venues = [
+        { name: 'Hive Club Zurich', slug: 'hive-club-zurich', city: 'Zurich', country: 'CH' },
+        { name: 'Icon Club', slug: 'icon-club', city: 'Zurich', country: 'CH' },
+        { name: 'Jade Club', slug: 'jade-club', city: 'Zurich', country: 'CH' },
+        { name: 'Kaufleuten', slug: 'kaufleuten', city: 'Zurich', country: 'CH' },
+    ];
+
+    for (const venue of venues) {
+        await prisma.venue.upsert({
+            where: { slug: venue.slug },
+            update: venue,
+            create: venue,
+        });
+    }
+
+    console.log('[seed] Venues upserted:', venues.map(v => v.slug).join(', '));
 }
 
 main()

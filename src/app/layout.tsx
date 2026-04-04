@@ -14,10 +14,10 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: {
-    default: "Guestlist",
-    template: "%s - Guestlist"
+    default: "Evently",
+    template: "%s — Evently"
   },
-  description: "Event guest list management system",
+  description: "Discover events for free. Manage your venue like a pro. The unified platform for nightlife — guests, promoters, and clubs.",
   icons: {
     icon: '/favicon.svg',
   },

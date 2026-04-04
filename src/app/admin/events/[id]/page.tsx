@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { format } from 'date-fns';
 import { CloudDownload, User as UserIcon, Link as LinkIcon, Hand } from 'lucide-react';
+import { calcPromoterBreakdown } from '@/lib/analytics';
 import { LinkModal } from '@/components/modals/LinkModal';
 import { createLink, updateLink, deleteLink, archiveEvent, unarchiveEvent } from './actions';
 import { ArchiveEventButton } from './ArchiveEventButton';
@@ -88,6 +89,24 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     const checkedIn = event.guests.filter(g => g.checkIn && !g.checkIn.checkedOutAt).length +
         event.guests.filter(g => g.checkIn && !g.checkIn.checkedOutAt).reduce((sum, g) => sum + g.plusOnesCount, 0);
     const checkInRate = totalGuests > 0 ? Math.round((checkedIn / totalGuests) * 100) : 0;
+
+    // Promoter breakdown for the summary panel
+    const promoterGuests = event.guests.map((g) => ({
+        id: g.id,
+        plusOnesCount: g.plusOnesCount,
+        signupLinkId: g.signupLink?.id ?? null,
+        promoterId: g.promoter?.id ?? null,
+        checkIn: g.checkIn && !g.checkIn.checkedOutAt ? { checkedInAt: g.checkIn.checkedInAt } : null,
+    }));
+    const uniquePromoters = Array.from(
+        new Map(
+            event.guests
+                .filter((g) => g.promoter)
+                .map((g) => [g.promoter!.id, g.promoter!]),
+        ).values(),
+    );
+    const promoterBreakdown = calcPromoterBreakdown(promoterGuests, uniquePromoters);
+
     const rsvpCounts = {
         CONFIRMED: event.guests.filter((guest) => guest.rsvpStatus === 'CONFIRMED').length,
         PENDING: event.guests.filter((guest) => guest.rsvpStatus === 'PENDING').length,
@@ -136,6 +155,18 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                         className="inline-flex items-center justify-center px-4 py-2 border border-gray-700 rounded-md shadow-sm text-sm font-medium text-gray-300 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
                         Edit Event
+                    </Link>
+                    <Link
+                        href={`/admin/events/${event.id}/analytics`}
+                        className="inline-flex items-center justify-center px-4 py-2 border border-indigo-700 rounded-md shadow-sm text-sm font-medium text-indigo-300 hover:bg-indigo-900/40 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                        Analytics
+                    </Link>
+                    <Link
+                        href={`/admin/events/${event.id}/lounge`}
+                        className="inline-flex items-center justify-center px-4 py-2 border border-gray-700 rounded-md shadow-sm text-sm font-medium text-gray-300 hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+                    >
+                        Lounge Reservations
                     </Link>
                     <a
                         href={`/admin/events/${event.id}/export`}
@@ -204,6 +235,33 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
                     </ul>
                 </div>
             </div>
+
+            {promoterBreakdown.length > 0 && (
+                <div className="mt-8">
+                    <h3 className="text-lg font-medium leading-6 text-white mb-4">Promoter Performance</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+                        {promoterBreakdown.map((p) => (
+                            <div key={p.promoterId} className="rounded-lg border border-gray-800 bg-gray-900 p-4">
+                                <p className="text-sm font-semibold text-white truncate">{p.name || 'Unnamed'}</p>
+                                <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+                                    <div>
+                                        <p className="text-lg font-bold text-white">{p.totalHeads}</p>
+                                        <p className="text-xs text-gray-400">Guests</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-lg font-bold text-green-400">{p.checkedInHeads}</p>
+                                        <p className="text-xs text-gray-400">Checked In</p>
+                                    </div>
+                                    <div>
+                                        <p className="text-lg font-bold text-indigo-400">{p.conversionRate}%</p>
+                                        <p className="text-xs text-gray-400">Rate</p>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div className="mt-8">
                 <h3 className="text-lg font-medium leading-6 text-white mb-4">All Guests</h3>
