@@ -3,12 +3,27 @@ import { auth } from '@/lib/auth';
 async function startCheckout() {
   'use server';
   const { redirect } = await import('next/navigation');
-  const res = await fetch(`${process.env.NEXTAUTH_URL}/api/stripe/create-subscription-checkout`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+  const session = await auth();
+  if (!session?.user?.id || !session.user.email) {
+    redirect('/login');
+  }
+
+  const priceId = process.env.STRIPE_OPERATOR_PRICE_ID;
+  if (!priceId) throw new Error('Stripe price not configured');
+
+  const appUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
+  const { getStripe } = await import('@/lib/stripe');
+
+  const checkoutSession = await getStripe().checkout.sessions.create({
+    mode: 'subscription',
+    customer_email: session.user.email,
+    line_items: [{ price: priceId, quantity: 1 }],
+    metadata: { userId: session.user.id },
+    success_url: `${appUrl}/admin`,
+    cancel_url: `${appUrl}/pricing`,
   });
-  const data = (await res.json()) as { url?: string };
-  if (data.url) redirect(data.url);
+
+  if (checkoutSession.url) redirect(checkoutSession.url);
 }
 
 export default async function PricingPage() {

@@ -71,7 +71,7 @@ model User {
   emailVerified DateTime?
   verificationToken String? @unique
   passwordHash  String
-  role          Role      @default(PROMOTER)
+  role          Role      @default(ADMIN)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
