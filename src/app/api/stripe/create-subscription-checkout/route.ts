@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Stripe price not configured' }, { status: 500 });
   }
 
-  const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
+  const appUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
 
   const body = req.body ? await req.json().catch(() => ({})) : {};
   const successUrl = (body as { successUrl?: string }).successUrl ?? `${appUrl}/admin`;

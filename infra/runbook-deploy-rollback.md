@@ -29,7 +29,7 @@ Every push to `main` or `dev` triggers the CI/CD pipeline automatically.
 | `DATABASE_URL`      | Postgres connection string (pooled)    |
 | `DIRECT_URL`        | Postgres direct connection (Prisma)    |
 | `NEXTAUTH_SECRET`   | Random 32-byte secret                  |
-| `NEXTAUTH_URL`      | Full URL e.g. `https://evently.swiss`  |
+| `NEXTAUTH_URL`      | Full URL e.g. `https://evently.swiss` — also controls email link base URL and Stripe redirect URLs |
 | `AUTH_TRUST_HOST`   | `true`                                 |
 | `RESEND_API_KEY`    | From Resend dashboard                  |
 | `RESEND_FROM_EMAIL` | `noreply@evently.swiss`                |

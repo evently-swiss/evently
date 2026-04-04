@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'No subscription found' }, { status: 404 });
   }
 
-  const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
+  const appUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
   const body = req.body ? await req.json().catch(() => ({})) : {};
   const returnUrl = (body as { returnUrl?: string }).returnUrl ?? `${appUrl}/account/billing`;
 

@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Event not found' }, { status: 404 });
   }
 
-  const appUrl = process.env.APP_URL ?? 'http://localhost:3000';
+  const appUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
   const successUrl = body.successUrl ?? `${appUrl}/admin/events/${eventId}?featured=success`;
   const cancelUrl = body.cancelUrl ?? `${appUrl}/admin/events/${eventId}`;
 

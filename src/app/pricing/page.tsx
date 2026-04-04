@@ -3,7 +3,7 @@ import { auth } from '@/lib/auth';
 async function startCheckout() {
   'use server';
   const { redirect } = await import('next/navigation');
-  const res = await fetch(`${process.env.APP_URL}/api/stripe/create-subscription-checkout`, {
+  const res = await fetch(`${process.env.NEXTAUTH_URL}/api/stripe/create-subscription-checkout`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
   });

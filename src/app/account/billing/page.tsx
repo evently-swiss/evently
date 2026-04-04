@@ -8,10 +8,10 @@ async function openBillingPortal() {
   const session = await (await import('@/lib/auth')).auth();
   if (!session?.user?.id) return;
 
-  const res = await fetch(`${process.env.APP_URL}/api/stripe/billing-portal`, {
+  const res = await fetch(`${process.env.NEXTAUTH_URL}/api/stripe/billing-portal`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ returnUrl: `${process.env.APP_URL}/account/billing` }),
+    body: JSON.stringify({ returnUrl: `${process.env.NEXTAUTH_URL}/account/billing` }),
   });
   const data = (await res.json()) as { url?: string };
   if (data.url) {

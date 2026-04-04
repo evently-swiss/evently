@@ -9,7 +9,10 @@ type PasswordResetEmailResult = {
 };
 
 function buildResetLink(token: string): string {
-  const appUrl = process.env.APP_URL || process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  const appUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+  if (process.env.NODE_ENV === 'production' && appUrl.includes('localhost')) {
+    console.warn('[password-reset-email] NEXTAUTH_URL appears to be localhost in production — email links will not work for external users.');
+  }
   return `${appUrl.replace(/\/$/, '')}/reset-password?token=${encodeURIComponent(token)}`;
 }
 
