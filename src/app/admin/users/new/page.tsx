@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useActionState, useState } from 'react';
 import { createUser } from '../actions';
 import Link from 'next/link';
 import { Select } from '@/components/ui/Select';
@@ -8,6 +8,7 @@ import { ActionState } from '@/lib/definitions';
 
 export default function NewUserPage() {
     const [state, dispatch] = useActionState<ActionState, FormData>(createUser, null);
+    const [sendEmail, setSendEmail] = useState(false);
 
     return (
         <div className="max-w-2xl mx-auto">
@@ -26,11 +27,32 @@ export default function NewUserPage() {
                     {state?.errors?.email && <p className="text-red-500 text-sm mt-1">{state.errors.email}</p>}
                 </div>
 
-                <div>
-                    <label htmlFor="password" className="block text-sm font-medium text-gray-400">Password</label>
-                    <input type="password" name="password" id="password" required className="mt-1 block w-full rounded-md border-gray-700 bg-gray-800 text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" />
-                    {state?.errors?.password && <p className="text-red-500 text-sm mt-1">{state.errors.password}</p>}
+                <div className="flex items-start gap-3 rounded-md border border-indigo-900/60 bg-indigo-950/30 p-4">
+                    <input
+                        type="checkbox"
+                        name="sendSetupEmail"
+                        id="sendSetupEmail"
+                        checked={sendEmail}
+                        onChange={(e) => setSendEmail(e.target.checked)}
+                        className="mt-0.5 h-4 w-4 rounded border-gray-600 bg-gray-800 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <div>
+                        <label htmlFor="sendSetupEmail" className="text-sm font-medium text-indigo-300 cursor-pointer">
+                            Let user set their own password via email
+                        </label>
+                        <p className="text-xs text-gray-400 mt-0.5">
+                            An invitation email will be sent so the user can choose their password. No need to set one manually.
+                        </p>
+                    </div>
                 </div>
+
+                {!sendEmail && (
+                    <div>
+                        <label htmlFor="password" className="block text-sm font-medium text-gray-400">Password</label>
+                        <input type="password" name="password" id="password" required={!sendEmail} className="mt-1 block w-full rounded-md border-gray-700 bg-gray-800 text-white shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm p-2" />
+                        {state?.errors?.password && <p className="text-red-500 text-sm mt-1">{state.errors.password}</p>}
+                    </div>
+                )}
 
                 <div>
                     <Select label="Role" name="role" id="role">
@@ -51,7 +73,7 @@ export default function NewUserPage() {
                         type="submit"
                         className="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
                     >
-                        Create User
+                        {sendEmail ? 'Create & Send Invite' : 'Create User'}
                     </button>
                 </div>
                 {state?.message && <p className="text-red-500 text-sm mt-2">{state.message}</p>}

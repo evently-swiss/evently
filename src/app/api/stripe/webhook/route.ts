@@ -88,23 +88,36 @@ async function handleSubscriptionUpsert(subscription: Stripe.Subscription) {
       ? subscription.customer
       : subscription.customer.id;
 
-  const priceId = subscription.items.data[0]?.price?.id ?? '';
-  const currentPeriodEnd = new Date(
+  const planId = subscription.items.data[0]?.price?.id ?? '';
+  const periodEnd = new Date(
     (subscription.items.data[0]?.current_period_end ?? subscription.billing_cycle_anchor) * 1000,
   );
-  const status = subscription.status;
+  const status = subscription.status === 'trialing'
+    ? 'TRIALING' as const
+    : subscription.status === 'canceled'
+      ? 'CANCELED' as const
+      : 'ACTIVE' as const;
 
-  await prisma.operatorSubscription.upsert({
-    where: { userId },
-    update: { stripeCustomerId: customerId, stripeSubscriptionId: subscription.id, stripePriceId: priceId, status, currentPeriodEnd },
-    create: { userId, stripeCustomerId: customerId, stripeSubscriptionId: subscription.id, stripePriceId: priceId, status, currentPeriodEnd },
+  const existing = await prisma.operatorSubscription.findFirst({
+    where: { OR: [{ stripeSubscriptionId: subscription.id }, { stripeCustomerId: customerId }] },
   });
+
+  if (existing) {
+    await prisma.operatorSubscription.update({
+      where: { id: existing.id },
+      data: { stripeCustomerId: customerId, stripeSubscriptionId: subscription.id, planId, status, periodEnd },
+    });
+  } else {
+    await prisma.operatorSubscription.create({
+      data: { userId, stripeCustomerId: customerId, stripeSubscriptionId: subscription.id, planId, status, periodEnd },
+    });
+  }
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   await prisma.operatorSubscription.updateMany({
     where: { stripeSubscriptionId: subscription.id },
-    data: { status: 'canceled' },
+    data: { status: 'CANCELED' },
   });
 }
 
@@ -112,21 +125,19 @@ async function handleFeaturedEventPayment(paymentIntent: Stripe.PaymentIntent) {
   const { userId, eventId } = paymentIntent.metadata ?? {};
   if (!userId || !eventId) return;
 
-  const expiresAt = new Date();
-  expiresAt.setDate(expiresAt.getDate() + FEATURED_DAYS);
+  const featuredUntil = new Date();
+  featuredUntil.setDate(featuredUntil.getDate() + FEATURED_DAYS);
 
   await prisma.featuredEvent.upsert({
-    where: { eventId },
+    where: { stripePaymentIntentId: paymentIntent.id },
     update: {
-      stripePaymentIntentId: paymentIntent.id,
-      paidByUserId: userId,
-      expiresAt,
+      featuredUntil,
     },
     create: {
       eventId,
       stripePaymentIntentId: paymentIntent.id,
-      paidByUserId: userId,
-      expiresAt,
+      userId,
+      featuredUntil,
     },
   });
 }

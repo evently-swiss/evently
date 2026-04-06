@@ -8,12 +8,19 @@
 
 ## 1. Normal Deploy (automated via GitHub Actions)
 
-Every push to `main` or `dev` triggers the CI/CD pipeline automatically.
+All feature work must merge via PRs targeting `dev`.
+`main` is release-only and reserved for CTO-approved production promotion.
+
+- PR checks run for `dev` only.
+- Pushes to `dev` deploy development automatically.
+- Pushes to `main` deploy production (release path only).
 
 | Branch | Environment      | Domain                   | PM2 App       |
 |--------|------------------|--------------------------|---------------|
 | `main` | production       | https://evently.swiss    | evently-prod  |
 | `dev`  | development      | https://dev.evently.swiss| evently-dev   |
+
+> Branch policy: Never open PRs to `main`. Use `dev` as the integration branch for all normal work.
 
 **Pipeline steps:**
 1. Build & Lint (`ubuntu-latest`)

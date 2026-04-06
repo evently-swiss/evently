@@ -9,12 +9,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const sub = await prisma.operatorSubscription.findUnique({
+  const sub = await prisma.operatorSubscription.findFirst({
     where: { userId: session.user.id },
     select: { stripeCustomerId: true },
   });
 
-  if (!sub) {
+  if (!sub?.stripeCustomerId) {
     return NextResponse.json({ error: 'No subscription found' }, { status: 404 });
   }
 

@@ -19,7 +19,43 @@ async function getUsers(query: string) {
             }
             : undefined,
         orderBy: { createdAt: 'desc' },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            createdAt: true,
+            mustChangePassword: true,
+            emailVerified: true,
+            verificationToken: true,
+        },
     });
+}
+
+function AccountStatusBadge({ mustChangePassword, emailVerified, verificationToken }: {
+    mustChangePassword: boolean;
+    emailVerified: Date | null;
+    verificationToken: string | null;
+}) {
+    if (mustChangePassword) {
+        return (
+            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-900/60 text-yellow-300">
+                Invite Pending
+            </span>
+        );
+    }
+    if (verificationToken && !emailVerified) {
+        return (
+            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-orange-900/60 text-orange-300">
+                Email Unverified
+            </span>
+        );
+    }
+    return (
+        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-900/60 text-green-300">
+            Active
+        </span>
+    );
 }
 
 export default async function UsersPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
@@ -81,7 +117,12 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                                         Created {format(new Date(user.createdAt), 'dd.MM.yyyy HH:mm')}
                                     </p>
                                 </div>
-                                <div className="flex items-center justify-between sm:justify-end gap-3 sm:space-x-4">
+                                <div className="flex items-center justify-between sm:justify-end gap-3 sm:space-x-4 flex-wrap">
+                                    <AccountStatusBadge
+                                        mustChangePassword={user.mustChangePassword}
+                                        emailVerified={user.emailVerified}
+                                        verificationToken={user.verificationToken}
+                                    />
                                     <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role === 'ADMIN' ? 'bg-red-900 text-red-300' :
                                         user.role === 'SUPER_ADMIN' ? 'bg-red-950 text-red-200' :
                                         user.role === 'PROMOTER' ? 'bg-blue-900 text-blue-300' :
