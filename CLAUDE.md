@@ -1,69 +1,129 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+Guidance for Claude Code when working in this repository.
 
-## Commands
+## Quick Commands
 
 ```bash
-# Development
-npm run dev          # Start dev server
+# Dev server
+npm run dev
 
-# Production build (generates Prisma client first)
+# Build
 npm run build
 
 # Lint
 npm run lint
 
-# Database (Prisma)
-npx prisma generate         # Regenerate client after schema changes
-npx prisma migrate dev       # Create and apply a migration
-npx prisma studio            # Open DB GUI
-```
+# Tests
+npm test                       # Vitest unit tests (run once)
+npm run test:watch             # Watch mode
+npm run test:e2e               # Playwright E2E
+npm run test:e2e:dev-smoke     # Smoke test only
 
-Local PostgreSQL is available via Docker:
-```bash
+# Database
+npx prisma generate            # Regenerate client after schema changes
+npx prisma migrate dev         # Create + apply migration
+npx prisma studio              # Database GUI
+
+# Local DB via Docker
 docker-compose up -d
 ```
 
-Environment variables are documented in `.env.example`. Required keys:
-`DATABASE_URL`, `DIRECT_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `APP_URL`,
-`RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `EMAIL_SMTP_HOST`, `EMAIL_SMTP_PORT`,
-`EMAIL_SMTP_USER`, `EMAIL_SMTP_PASS`, `EMAIL_SMTP_FROM`.
-
 ## Architecture
 
-**Next.js 15 App Router** with TypeScript, Prisma (PostgreSQL/Supabase), NextAuth v5, and Tailwind CSS v4.
+**Next.js 15 App Router** with TypeScript (strict), Prisma (PostgreSQL), NextAuth v5, Tailwind CSS v4.
+
+All mutations use **Server Actions** co-located in `page.tsx` or sibling `actions.ts` files. There is no separate REST layer except:
+- `/api/auth/[...nextauth]` — NextAuth
+- `/api/internal/*` — internal APIs (scraper ingest, reconciliation, subscription check)
+- `/api/stripe/*` and `/api/webhooks/stripe/` — Stripe billing
 
 ### Route Structure & Role Separation
 
 | Prefix | Role | Purpose |
 |--------|------|---------|
-| `/` | Public | Landing page, login |
-| `/s/[slug]` | Public | Guest signup form (per SignupLink) |
-| `/admin/*` | ADMIN | Full system: events, users, stats |
+| `/` | Public | Landing page, login, register, pricing |
+| `/s/[eventSlug]/[linkSlug]` | Public | Guest signup form (no login required) |
+| `/admin/*` | SUPER_ADMIN | Events, users, venues, scraper queue, subscriptions |
 | `/promoter/*` | PROMOTER | Own events, signup links, guest management |
-| `/door/[eventId]` | ENTRY_STAFF | Guest check-in interface |
+| `/door/[eventId]` | ENTRY_STAFF | Check-in with QR scanning |
+| `/account/billing` | SUPER_ADMIN | Subscription management |
+| `/auth/*` | Public | Email verification, password setup/reset |
 
-Middleware (`middleware.ts`) gates routes by auth status. Role-based redirects happen post-login in the NextAuth `signIn` callback (`lib/auth.ts`).
+`middleware.ts` gates routes by auth status. Role-based redirects happen post-login in `src/auth.config.ts`.
 
 ### Data Model
 
-Five core Prisma models: `User` → `Event` ← `SignupLink` → `Guest` ← `CheckIn`
+16 Prisma models. Core chain: `User` → `Event` ← `SignupLink` → `Guest` ← `CheckIn`
 
-- **User** roles: `ADMIN`, `PROMOTER`, `ENTRY_STAFF`
-- **SignupLink** types: `GENERAL`, `PROMOTER`, `PERSONAL` — each link controls which fields are visible/required (`HIDDEN | OPTIONAL | REQUIRED`) and has its own guest quota
-- **Guest** records belong to both an Event and a SignupLink; check-in is tracked via a separate `CheckIn` model
-- Phone numbers are normalized to Swiss format (+41) in `lib/guest-utils.ts`; duplicate detection checks name, email, and phone
-
-### Server Actions
-
-Mutations are handled via Next.js Server Actions co-located in each route's `page.tsx` or a sibling `actions.ts`. There is no separate REST API layer (except `/api/auth/[...nextauth]` and `/admin/events/[id]/export`).
+Key models:
+- **User** roles: `SUPER_ADMIN`, `PROMOTER`, `ENTRY_STAFF`
+- **Event** sources: `INTERNAL` or `SCRAPED`; statuses: `DRAFT`, `PUBLISHED`, `ARCHIVED`
+- **SignupLink** types: `GENERAL`, `PROMOTER`, `PERSONAL` — controls field visibility (`HIDDEN | OPTIONAL | REQUIRED`), per-link quotas, max plus-ones
+- **Guest** — belongs to both Event and SignupLink; `CheckIn` is a separate model for multi-entry tracking
+- **ScrapedEvent** — raw ingest from Python scraper; sync statuses: `NEW`, `RECONCILED`, `DUPLICATE`, `FAILED`
+- **OperatorSubscription** — Stripe subscription for SUPER_ADMIN access
+- **LoungeLayout / LoungeBox** — canvas/SVG floor plans per venue, with event-specific overrides
 
 ### Key Files
 
-- `lib/auth.ts` — NextAuth config, credential validation, JWT/session with role
-- `lib/guest-utils.ts` — Phone normalization, duplicate detection logic
-- `lib/definitions.ts` — Shared TypeScript types
-- `prisma/schema.prisma` — Full data model
-- `components/modals/` — AddGuest, EditGuest, LinkModal, ImportGuests (CSV via PapaParse)
-- `components/SignupForm.tsx` — Public-facing signup with conditional field rendering
+| File | Purpose |
+|------|---------|
+| `src/auth.config.ts` | NextAuth config, JWT callbacks, role redirects |
+| `src/middleware.ts` | Route protection |
+| `src/lib/auth.ts` | Credential validation, session helpers |
+| `src/lib/guest-utils.ts` | Phone normalization (+41), duplicate detection |
+| `src/lib/definitions.ts` | Shared TypeScript types |
+| `src/lib/subscription.ts` | Subscription status helpers |
+| `src/lib/stripe.ts` | Stripe client |
+| `prisma/schema.prisma` | Full data model |
+| `src/app/components/modals/` | AddGuest, EditGuest, ImportGuests (CSV/PapaParse), LinkModal |
+| `src/app/components/SignupForm.tsx` | Public signup with conditional field rendering |
+| `src/app/api/internal/scraped-events/` | Scraper ingest endpoint (API key auth) |
+| `ecosystem.config.js` | PM2 config (prod port 3000, dev port 3001) |
+
+## Environment Variables
+
+Required (see `.env.example`):
+- `DATABASE_URL` — pooled connection
+- `DIRECT_URL` — non-pooled (Prisma migrations only)
+- `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `APP_URL`
+- `RESEND_API_KEY`, `RESEND_FROM_EMAIL`
+- `EMAIL_SMTP_HOST/PORT/USER/PASS/FROM` — SMTP fallback
+- `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`
+- `INTERNAL_API_KEY` — Bearer token for scraper endpoint
+- `SUPER_ADMIN_EMAIL` — used for seeding
+
+## Testing
+
+Unit tests use Vitest with mocked Prisma (`src/test/mocks/prisma.ts`) and auth helpers (`src/test/mocks/auth.ts`).
+
+E2E tests use Playwright. The smoke test (`e2e/dev-smoke.spec.ts`) validates the full flow: login → create event → create signup link → guest signup → verify in guest list.
+
+E2E environment variables: `PLAYWRIGHT_BASE_URL`, `E2E_ADMIN_EMAIL`, `E2E_ADMIN_PASSWORD`.
+
+See `docs/testing.md` for patterns.
+
+## Deployment
+
+- **VPS**: Infomaniak, Node.js 20, PM2
+- **prod** → port 3000 → `evently.swiss`
+- **dev** → port 3001 → `dev.evently.swiss`
+- CI/CD: GitHub Actions (`.github/workflows/deploy.yml`) → SSH → `npm ci` → `prisma migrate deploy` → `npm run build` → `pm2 reload`
+- Rollback runbook: `infra/runbook-deploy-rollback.md`
+
+### Branching Policy
+
+- PRs always target `dev`
+- `main` is production-only; promoted by CTO approval
+- Never push directly to `main`
+
+## Patterns & Conventions
+
+- **Server Actions** for all mutations — avoid adding REST endpoints unless for external callers
+- **Zod** for input validation at API boundaries
+- **Swiss phone format** — always normalize via `lib/guest-utils.ts` before storing
+- **Duplicate detection** — check name + email + phone before inserting guests
+- **Prisma singleton** — always import from `lib/prisma.ts`, never instantiate directly
+- When adding a new route, add it to the role table in `middleware.ts`
+- Migrations: use `npx prisma migrate dev --name <descriptive-name>`

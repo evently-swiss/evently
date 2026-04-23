@@ -1,53 +1,134 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Evently
 
-## Getting Started
+Unified nightlife platform for the Swiss nightlife scene — guest management, event discovery, lounge reservations, and venue operations in a single Next.js application.
 
-First, run the development server:
+**Production:** [evently.swiss](https://evently.swiss) | **Dev:** [dev.evently.swiss](https://dev.evently.swiss) | **Version:** 0.2.1
+
+---
+
+## What it does
+
+- **Guest Management** — Signup links per event, CSV import, duplicate detection, Swiss phone normalization, RSVP tracking
+- **Door Check-in** — QR code scanning for entry staff, multi-entry/exit tracking
+- **Lounge / VIP** — Visual floor plan editor (canvas/SVG), table reservations, min consumption tracking
+- **Promoter Portal** — Promoters manage their own events and guest lists
+- **Event Scraping** — Python scraper ingest via internal API, admin review queue
+- **Subscriptions** — Stripe billing for operator access, featured event promotions
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | Next.js 15 (App Router, Server Actions) |
+| Language | TypeScript 5 (strict) |
+| Database | PostgreSQL 15 + Prisma ORM |
+| Auth | NextAuth v5 (JWT, role-based) |
+| Styling | Tailwind CSS v4 |
+| Email | Resend API + SMTP fallback |
+| Payments | Stripe |
+| Testing | Vitest (unit) + Playwright (E2E) |
+| Runtime | Node.js 20 + PM2 |
+
+---
+
+## Local Development
+
+### Prerequisites
+
+- Node.js 20 (use `.nvmrc`)
+- Docker (for local PostgreSQL)
+
+### Setup
 
 ```bash
+# 1. Start local database
+docker-compose up -d
+
+# 2. Install dependencies
+npm install
+
+# 3. Configure environment
+cp .env.example .env
+# Fill in DATABASE_URL, NEXTAUTH_SECRET, etc.
+
+# 4. Run migrations and seed
+npx prisma migrate dev
+npx prisma db seed
+
+# 5. Start dev server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Useful commands
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run dev              # Dev server (port 3000)
+npm run build            # Production build
+npm run lint             # ESLint
+npm test                 # Vitest unit tests
+npm run test:watch       # Unit tests in watch mode
+npm run test:e2e         # Playwright E2E tests
+npm run test:e2e:dev-smoke  # Smoke test only
+
+npx prisma generate      # Regenerate Prisma client
+npx prisma migrate dev   # Create + apply migration
+npx prisma studio        # Database GUI
+```
+
+---
+
+## Environment Variables
+
+See `.env.example` for all required variables. Key ones:
+
+| Variable | Purpose |
+|----------|---------|
+| `DATABASE_URL` | Pooled PostgreSQL connection |
+| `DIRECT_URL` | Non-pooled connection (migrations only) |
+| `NEXTAUTH_SECRET` | JWT signing key |
+| `NEXTAUTH_URL` | Auth redirect base URL |
+| `APP_URL` | Base URL for email links |
+| `RESEND_API_KEY` | Email via Resend |
+| `STRIPE_SECRET_KEY` | Stripe API key |
+| `INTERNAL_API_KEY` | Bearer token for scraper ingest |
+
+---
+
+## Role Structure
+
+| Role | Access |
+|------|--------|
+| `SUPER_ADMIN` | Full platform: events, users, venues, scraper, subscriptions |
+| `PROMOTER` | Own events, signup links, guest lists |
+| `ENTRY_STAFF` | Door check-in only (`/door/[eventId]`) |
+
+Routes are protected in `middleware.ts`. Role redirects happen post-login in `lib/auth.ts`.
+
+---
+
+## Deployment
+
+Hosted on an Infomaniak VPS managed by PM2.
+
+- `npm run build` → `pm2 reload evently-prod` (port 3000)
+- Dev instance runs on port 3001 → `dev.evently.swiss`
+- CI/CD via GitHub Actions (see `.github/workflows/deploy.yml`)
+- Full runbook: [`infra/runbook-deploy.md`](infra/runbook-deploy.md)
+
+### Branching Policy
+
+- Open all PRs against `dev`
+- `main` is production-only, updated via CTO-approved release promotion
+- Do **not** open PRs directly against `main`
+
+---
 
 ## Testing
 
-- Run tests once: `npm test`
-- Run tests in watch mode: `npm run test:watch`
-- Test setup and Prisma testing patterns: [`docs/testing.md`](docs/testing.md)
+See [`docs/testing.md`](docs/testing.md) for patterns and setup.
 
-## Branching Policy
-
-- Open all pull requests against `dev`.
-- Do not open pull requests against `main`.
-- `main` is production-only and updated through CTO-approved release promotion.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-## Releases
-
-- Deployment runbook: [`../plans/runbook-deploy.md`](../plans/runbook-deploy.md)
-- Release checklist template: [`.github/ISSUE_TEMPLATE/release-checklist.md`](.github/ISSUE_TEMPLATE/release-checklist.md)
+E2E smoke test validates: login → create event → create link → guest signup → verify in guest list.
