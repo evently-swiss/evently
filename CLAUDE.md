@@ -110,7 +110,29 @@ See `docs/testing.md` for patterns.
 - **prod** → port 3000 → `evently.swiss`
 - **dev** → port 3001 → `dev.evently.swiss`
 - CI/CD: GitHub Actions (`.github/workflows/deploy.yml`) → SSH → `npm ci` → `prisma migrate deploy` → `npm run build` → `pm2 reload`
-- Rollback runbook: `infra/runbook-deploy-rollback.md`
+- Deploy + rollback runbook: `infra/runbook-deploy-rollback.md`
+- DB backup + restore runbook: `infra/runbook-db-backup-restore.md`
+
+### GitHub Actions Secrets
+
+Required per environment (`production` / `development`):
+
+| Secret | Value |
+|--------|-------|
+| `INFOMANIAK_HOST` | VPS IP |
+| `INFOMANIAK_USER` | SSH deploy user |
+| `INFOMANIAK_SSH_KEY` | Private SSH key (PEM) |
+| `DATABASE_URL` | Pooled Postgres connection string |
+| `DIRECT_URL` | Non-pooled (for Prisma migrations) |
+| `NEXTAUTH_SECRET` | `openssl rand -base64 32` |
+| `NEXTAUTH_URL` | `https://evently.swiss` or `https://dev.evently.swiss` |
+| `APP_URL` | Same as NEXTAUTH_URL |
+| `AUTH_TRUST_HOST` | `true` |
+| `RESEND_API_KEY` | From Resend dashboard |
+| `RESEND_FROM_EMAIL` | `noreply@evently.swiss` |
+| `STRIPE_SECRET_KEY` | Stripe API key |
+| `STRIPE_WEBHOOK_SECRET` | Stripe webhook signing secret |
+| `INTERNAL_API_KEY` | Bearer token for scraper endpoint |
 
 ### Branching Policy
 
